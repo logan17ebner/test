@@ -6,6 +6,32 @@ const ANALYSIS_WEBHOOK_KEY = 'dd_analysis_webhook_url';
 
 const DocumentsContext = createContext(null);
 
+/**
+ * Reads file content using the FileReader API.
+ *   - .txt             → readAsText()     (returns plain UTF-8 string)
+ *   - .pdf/.docx/.xlsx → readAsDataURL()  (returns base64 data URI)
+ *     NOTE: proper text extraction from binary formats would require a
+ *     parsing library (e.g. pdf-parse, mammoth, xlsx). The base64 string
+ *     is stored here so it can be forwarded to n8n for server-side parsing.
+ */
+function readFileContent(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+
+    if (ext === 'txt') {
+      reader.readAsText(file);
+    } else {
+      // .pdf, .docx, .xlsx — store as base64 data URI
+      // NOTE: proper text extraction would require a parsing library
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
 export function DocumentsProvider({ children }) {
   const [docs, setDocs] = useState(() => {
     try {
@@ -40,9 +66,10 @@ export function DocumentsProvider({ children }) {
 
   /**
    * Upload a file:
-   * 1. Add a "Uploading" record to the list immediately (optimistic)
-   * 2. POST the file as multipart/form-data to the configured webhook
-   * 3. Transition status to "Processing" on success, "Error" on failure
+   * 1. Add an "Uploading" record to the list immediately (optimistic)
+   * 2. Read the file content via FileReader and store it on the doc object
+   * 3. POST the file as multipart/form-data to the configured webhook
+   * 4. Transition status to "Ready" on success, "Error" on failure
    */
   const uploadDocument = useCallback(async (file) => {
     const id = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -56,15 +83,22 @@ export function DocumentsProvider({ children }) {
       status: 'Uploading',
       webhookStatus: null,
       webhookResponse: null,
+      content: null,
     };
 
     setDocs((prev) => [record, ...prev]);
 
+    // Read file content and attach it to the doc so Analysis can forward it to n8n
+    const content = await readFileContent(file);
+    setDocs((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, content } : d))
+    );
+
     if (!uploadWebhookUrl) {
-      // No webhook configured — just mark as Processing so user can still see the doc
+      // No upload webhook configured — mark as Ready so it's eligible for analysis
       setDocs((prev) =>
         prev.map((d) =>
-          d.id === id ? { ...d, status: 'Processing', webhookStatus: 'skipped' } : d
+          d.id === id ? { ...d, status: 'Ready', webhookStatus: 'skipped' } : d
         )
       );
       return { success: true, skipped: true };
@@ -96,7 +130,7 @@ export function DocumentsProvider({ children }) {
       setDocs((prev) =>
         prev.map((d) =>
           d.id === id
-            ? { ...d, status: res.ok ? 'Processing' : 'Error', webhookStatus, webhookResponse }
+            ? { ...d, status: res.ok ? 'Ready' : 'Error', webhookStatus, webhookResponse }
             : d
         )
       );
@@ -116,6 +150,8 @@ export function DocumentsProvider({ children }) {
 
   /**
    * Trigger an analysis run — POSTs document IDs + metadata to the analysis webhook.
+   * NOTE: Analysis.jsx performs its own fetch directly to VITE_N8N_WEBHOOK_URL so it
+   * can read and map the response body. This method is kept for backwards compatibility.
    */
   const triggerAnalysis = useCallback(async () => {
     if (!analysisWebhookUrl) return { success: false, skipped: true };
@@ -123,7 +159,7 @@ export function DocumentsProvider({ children }) {
     const payload = {
       triggeredAt: new Date().toISOString(),
       documents: docs
-        .filter((d) => d.status === 'Processing' || d.status === 'Ready')
+        .filter((d) => d.status === 'Ready')
         .map(({ id, name, type, uploadedAt }) => ({ id, name, type, uploadedAt })),
     };
 
