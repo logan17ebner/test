@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { DocumentsProvider } from './context/DocumentsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Landing from './pages/Landing';
@@ -13,6 +14,7 @@ import Settings from './pages/Settings';
 export default function App() {
   return (
     <AuthProvider>
+      <DocumentsProvider>
       <BrowserRouter>
         <Routes>
           {/* Public */}
@@ -42,6 +44,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </DocumentsProvider>
     </AuthProvider>
   );
 }

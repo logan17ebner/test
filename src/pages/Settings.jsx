@@ -10,10 +10,15 @@ import {
   Database,
   Clock,
   FileText,
+  Webhook,
+  Eye,
+  EyeOff,
+  Save,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import { useAuth } from '../context/AuthContext';
-import { mockWorkspace, mockDocuments } from '../data/mockData';
+import { useDocuments } from '../context/DocumentsContext';
+import { mockWorkspace } from '../data/mockData';
 import { useNavigate } from 'react-router-dom';
 
 function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, onCancel, requireTyped }) {
@@ -34,7 +39,6 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
             <X size={16} />
           </button>
         </div>
-
         <div className="px-6 py-5">
           <p className="text-slate-600 text-sm leading-relaxed mb-4">{message}</p>
           {requireTyped && (
@@ -52,7 +56,6 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
             </div>
           )}
         </div>
-
         <div className="flex gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
           <button onClick={onCancel} className="flex-1 border border-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-white transition-colors">
             Cancel
@@ -70,52 +73,121 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
   );
 }
 
-function Section({ title, icon: Icon, children }) {
+function Section({ title, icon: Icon, description, children }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
-        <Icon size={16} className="text-slate-500" />
-        <h3 className="text-slate-800 font-semibold text-sm">{title}</h3>
+      <div className="px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-2.5">
+          <Icon size={16} className="text-slate-500" />
+          <div>
+            <h3 className="text-slate-800 font-semibold text-sm">{title}</h3>
+            {description && <p className="text-slate-400 text-xs mt-0.5">{description}</p>}
+          </div>
+        </div>
       </div>
       <div className="px-5 py-5">{children}</div>
     </div>
   );
 }
 
-function Field({ label, value, editable }) {
-  const [val, setVal] = useState(value);
+function InfoField({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-50 last:border-0">
+      <p className="text-slate-500 text-xs mt-0.5 w-32 flex-shrink-0">{label}</p>
+      <p className="text-slate-800 text-sm font-medium text-right">{value}</p>
+    </div>
+  );
+}
+
+function WebhookField({ label, description, value, onSave, placeholder }) {
   const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const save = () => {
+  const handleSave = () => {
+    onSave(draft.trim());
     setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const handleEdit = () => {
+    setDraft(value);
+    setEditing(true);
+    setSaved(false);
+  };
+
+  const isValid = (url) => {
+    try { new URL(url); return true; } catch { return false; }
+  };
+
   return (
-    <div className="flex items-start justify-between gap-4 py-3.5 border-b border-slate-50 last:border-0">
-      <div>
-        <p className="text-slate-500 text-xs mb-0.5">{label}</p>
-        {editing ? (
-          <input
-            type="text"
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            className="border border-blue-300 focus:border-blue-500 rounded-lg px-3 py-1.5 text-slate-800 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-            autoFocus
-          />
-        ) : (
-          <p className="text-slate-800 text-sm font-medium">{val}</p>
-        )}
-      </div>
-      {editable && (
-        <div className="flex items-center gap-2 flex-shrink-0 pt-4">
+    <div className="py-4 border-b border-slate-100 last:border-0">
+      <div className="flex items-start justify-between gap-4 mb-1.5">
+        <div>
+          <p className="text-slate-700 text-sm font-semibold">{label}</p>
+          <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{description}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
           {saved && <CheckCircle size={14} className="text-green-500" />}
-          {editing ? (
-            <button onClick={save} className="text-blue-500 hover:text-blue-600 text-xs font-medium">Save</button>
+          {!editing ? (
+            <button
+              onClick={handleEdit}
+              className="text-blue-500 hover:text-blue-600 text-xs font-semibold transition-colors"
+            >
+              {value ? 'Edit' : 'Add'}
+            </button>
           ) : (
-            <button onClick={() => setEditing(true)} className="text-slate-400 hover:text-slate-600 text-xs font-medium">Edit</button>
+            <button
+              onClick={handleSave}
+              disabled={draft.length > 0 && !isValid(draft)}
+              className="flex items-center gap-1 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
+            >
+              <Save size={11} /> Save
+            </button>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="mt-2">
+          <input
+            type={show ? 'text' : 'password'}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+            className="w-full border border-slate-200 focus:border-blue-400 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-mono outline-none transition-colors focus:ring-2 focus:ring-blue-500/20"
+          />
+          {draft.length > 0 && !isValid(draft) && (
+            <p className="text-red-500 text-xs mt-1">Please enter a valid URL (starting with https://)</p>
+          )}
+          <button
+            onClick={() => setShow((v) => !v)}
+            className="mt-1.5 text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1"
+          >
+            {show ? <EyeOff size={12} /> : <Eye size={12} />}
+            {show ? 'Hide URL' : 'Show URL'}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-2">
+          {value ? (
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              <Webhook size={13} className="text-blue-400 flex-shrink-0" />
+              <span className="text-slate-600 text-xs font-mono truncate">
+                {value.replace(/^(https?:\/\/[^/]+).*/, '$1')}/••••••••
+              </span>
+              <span className="ml-auto bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full border border-green-200 flex-shrink-0">
+                Configured
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 border-dashed rounded-xl px-3 py-2">
+              <Webhook size={13} className="text-amber-400 flex-shrink-0" />
+              <span className="text-amber-600 text-xs">Not configured — click Add to connect your backend</span>
+            </div>
           )}
         </div>
       )}
@@ -126,11 +198,18 @@ function Field({ label, value, editable }) {
 export default function Settings() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [showDeleteDoc, setShowDeleteDoc] = useState(false);
+  const {
+    docs,
+    clearAllDocuments,
+    uploadWebhookUrl, saveUploadWebhook,
+    analysisWebhookUrl, saveAnalysisWebhook,
+  } = useDocuments();
+
+  const [showClearDocs, setShowClearDocs] = useState(false);
   const [showDeleteWorkspace, setShowDeleteWorkspace] = useState(false);
-  const [deleteDocTarget, setDeleteDocTarget] = useState(mockDocuments[0]?.name || '');
 
   const handleDeleteWorkspace = () => {
+    clearAllDocuments();
     logout();
     navigate('/');
   };
@@ -142,57 +221,75 @@ export default function Settings() {
   return (
     <AppLayout title="Settings">
       <div className="max-w-2xl mx-auto space-y-5">
-        {/* Workspace */}
-        <Section title="Workspace" icon={Building2}>
-          <Field label="Workspace name" value={mockWorkspace.name} editable />
-          <Field label="Plan" value={mockWorkspace.plan} />
-          <Field label="Created" value={new Date(mockWorkspace.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} />
+
+        {/* Webhooks — most important, shown first */}
+        <Section
+          title="Webhooks"
+          icon={Webhook}
+          description="Connect your backend to receive documents and trigger analysis"
+        >
+          <WebhookField
+            label="Document Upload Webhook"
+            description="Called with multipart/form-data when a user confirms an upload. Receives the file plus metadata (filename, type, size, documentId, uploadedAt)."
+            value={uploadWebhookUrl}
+            onSave={saveUploadWebhook}
+            placeholder="https://your-backend.com/webhooks/upload"
+          />
+          <WebhookField
+            label="Analysis Trigger Webhook"
+            description='Called with application/json when "Run Analysis" is clicked. Receives triggeredAt and a list of document IDs and metadata.'
+            value={analysisWebhookUrl}
+            onSave={saveAnalysisWebhook}
+            placeholder="https://your-backend.com/webhooks/analyze"
+          />
+          <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <p className="text-slate-500 text-xs leading-relaxed">
+              Webhook URLs are stored in your browser's localStorage and never sent to any third-party server. Rotate or remove them at any time.
+            </p>
+          </div>
         </Section>
 
-        {/* User info */}
+        {/* Workspace */}
+        <Section title="Workspace" icon={Building2}>
+          <InfoField label="Name" value={mockWorkspace.name} />
+          <InfoField label="Plan" value={mockWorkspace.plan} />
+          <InfoField label="Documents" value={docs.length} />
+          <InfoField
+            label="Created"
+            value={new Date(mockWorkspace.createdAt).toLocaleDateString('en-US', {
+              month: 'long', day: 'numeric', year: 'numeric',
+            })}
+          />
+        </Section>
+
+        {/* Account */}
         <Section title="Account" icon={User}>
-          <Field label="Full name" value={user?.name || 'Analyst'} editable />
-          <Field label="Email address" value={user?.email || ''} />
-          <Field label="Role" value={user?.role || 'Analyst'} />
-          <div className="pt-2">
-            <button className="text-blue-500 hover:text-blue-600 text-sm font-medium transition-colors">
-              Change password →
-            </button>
-          </div>
+          <InfoField label="Name" value={user?.name || 'Analyst'} />
+          <InfoField label="Email" value={user?.email || ''} />
+          <InfoField label="Role" value={user?.role || 'Analyst'} />
         </Section>
 
         {/* Data retention */}
         <Section title="Data & Retention" icon={Shield}>
-          <div className="space-y-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <Clock size={15} className="text-slate-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-slate-700 text-sm font-semibold mb-0.5">Retention policy</p>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    Documents and analysis outputs are retained for <strong>{mockWorkspace.retentionDays} days</strong> from upload.
-                    All data is automatically purged after this period. Scheduled purge date: <strong>{retentionDate}</strong>.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Database size={15} className="text-slate-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-slate-700 text-sm font-semibold mb-0.5">Storage & privacy</p>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    All documents are encrypted at rest (AES-256) and in transit (TLS 1.3). Your documents are never used to train AI models.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <FileText size={15} className="text-slate-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-slate-700 text-sm font-semibold mb-0.5">Access logs</p>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    All document access and analysis runs are logged. Logs are available for 90 days and exportable on request.
-                  </p>
-                </div>
-              </div>
+          <div className="space-y-3.5">
+            <div className="flex items-start gap-2.5">
+              <Clock size={15} className="text-slate-400 flex-shrink-0 mt-0.5" />
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Documents are retained for <strong className="text-slate-700">{mockWorkspace.retentionDays} days</strong>.
+                Scheduled purge: <strong className="text-slate-700">{retentionDate}</strong>.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <Database size={15} className="text-slate-400 flex-shrink-0 mt-0.5" />
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Files are encrypted at rest (AES-256) and in transit (TLS 1.3). Documents are <strong className="text-slate-700">never used to train AI models</strong>.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <FileText size={15} className="text-slate-400 flex-shrink-0 mt-0.5" />
+              <p className="text-slate-500 text-sm leading-relaxed">
+                All document access and analysis runs are logged for 90 days and exportable on request.
+              </p>
             </div>
           </div>
         </Section>
@@ -204,29 +301,27 @@ export default function Settings() {
             <h3 className="text-red-800 font-semibold text-sm">Danger Zone</h3>
           </div>
           <div className="px-5 py-5 space-y-4">
-            {/* Delete document */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
               <div>
-                <p className="text-slate-800 text-sm font-semibold mb-0.5">Delete a document</p>
+                <p className="text-slate-800 text-sm font-semibold mb-0.5">Clear all documents</p>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Permanently remove a document and its associated analysis data.
+                  Remove all {docs.length} document record{docs.length !== 1 ? 's' : ''} from this workspace. Cannot be undone.
                 </p>
               </div>
               <button
-                onClick={() => setShowDeleteDoc(true)}
-                className="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium px-3.5 py-2 rounded-xl transition-colors flex-shrink-0"
+                onClick={() => setShowClearDocs(true)}
+                disabled={docs.length === 0}
+                className="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-3.5 py-2 rounded-xl transition-colors flex-shrink-0"
               >
                 <Trash2 size={14} />
-                Delete
+                Clear
               </button>
             </div>
-
-            {/* Delete workspace */}
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-slate-800 text-sm font-semibold mb-0.5">Delete workspace</p>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Permanently delete this workspace, all documents, and all analysis data. This action is irreversible.
+                  Permanently delete this workspace, all documents, and all configuration. Irreversible.
                 </p>
               </div>
               <button
@@ -241,21 +336,21 @@ export default function Settings() {
         </div>
       </div>
 
-      {showDeleteDoc && (
+      {showClearDocs && (
         <ConfirmDialog
-          title="Delete document"
-          message={`This will permanently delete "${deleteDocTarget}" and all associated analysis data. This cannot be undone.`}
-          confirmLabel="Delete document"
+          title="Clear all documents"
+          message={`This will permanently remove all ${docs.length} document records from this workspace. Your backend data is unaffected.`}
+          confirmLabel="Clear all"
           confirmClass="bg-red-500 hover:bg-red-600 text-white"
-          onConfirm={() => setShowDeleteDoc(false)}
-          onCancel={() => setShowDeleteDoc(false)}
+          onConfirm={() => { clearAllDocuments(); setShowClearDocs(false); }}
+          onCancel={() => setShowClearDocs(false)}
         />
       )}
 
       {showDeleteWorkspace && (
         <ConfirmDialog
           title="Delete workspace"
-          message="This will permanently delete your entire workspace including all documents, analysis history, and settings. This action is completely irreversible."
+          message="This will delete your workspace, sign you out, and clear all local data including webhook configuration. This action is completely irreversible."
           confirmLabel="Delete workspace"
           confirmClass="bg-red-500 hover:bg-red-600 text-white"
           requireTyped="delete workspace"
