@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { pushNotification } from '../utils/notifications';
 
 const STORAGE_KEY = 'dd_documents';
 const WEBHOOK_KEY = 'dd_upload_webhook_url';
@@ -101,6 +102,12 @@ export function DocumentsProvider({ children }) {
           d.id === id ? { ...d, status: 'Ready', webhookStatus: 'skipped' } : d
         )
       );
+      pushNotification({
+        type: 'success',
+        title: 'Document ready',
+        body: `${file.name} is ready in your workspace.`,
+        href: '/documents',
+      });
       return { success: true, skipped: true };
     }
 
@@ -135,6 +142,22 @@ export function DocumentsProvider({ children }) {
         )
       );
 
+      if (res.ok) {
+        pushNotification({
+          type: 'success',
+          title: 'Document ready',
+          body: `${file.name} finished processing and is ready for analysis.`,
+          href: '/documents',
+        });
+      } else {
+        pushNotification({
+          type: 'error',
+          title: 'Document error',
+          body: `${file.name} could not be processed (HTTP ${res.status}).`,
+          href: '/documents',
+        });
+      }
+
       return { success: res.ok, status: res.status };
     } catch (err) {
       setDocs((prev) =>
@@ -144,6 +167,12 @@ export function DocumentsProvider({ children }) {
             : d
         )
       );
+      pushNotification({
+        type: 'error',
+        title: 'Upload failed',
+        body: `${file.name}: ${err.message}`,
+        href: '/documents',
+      });
       return { success: false, error: err.message };
     }
   }, [uploadWebhookUrl]);

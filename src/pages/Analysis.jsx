@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Zap,
   BarChart3,
-  Webhook,
   AlertTriangle,
   CheckCircle,
   X,
@@ -11,11 +10,23 @@ import {
   AlertCircle,
   Flag,
   ClipboardList,
+  Download,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import { useDocuments } from '../context/DocumentsContext';
 import { Link } from 'react-router-dom';
 import { mapAuditToAnalysis } from '../utils/mapAuditToAnalysis';
+import {
+  isWorkflowEditorUrl,
+  resolveAnalysisWebhookFetchUrl,
+  summarizeWebhookErrorBody,
+} from '../utils/analysisWebhook';
+import { buildAnalysisWebhookPayload } from '../utils/analysisPayload';
+import {
+  addPendingReview,
+  getApprovedRecord,
+  getPendingReviews,
+} from '../utils/analysisReviewQueue';
 
 // Fallback mock analysis — shown when no live run has completed yet.
 // Replaced by liveAnalysis once a successful run returns data.
@@ -35,9 +46,10 @@ const mockAnalysis = {
   missingData: [],
 };
 
-function WebhookResultBanner({ result, onDismiss }) {
+function RunResultBanner({ result, onDismiss }) {
   if (!result) return null;
   const ok = result.success;
+  const awaiting = ok && result.awaitingReview;
   return (
     <div
       className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
@@ -51,11 +63,17 @@ function WebhookResultBanner({ result, onDismiss }) {
       )}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${ok ? 'text-green-800' : 'text-red-800'}`}>
-          {ok ? 'Analysis completed successfully' : 'Analysis failed'}
+          {awaiting
+            ? 'Submitted for administrator review'
+            : ok
+            ? 'Analysis completed successfully'
+            : 'Analysis failed'}
         </p>
-        <p className={`text-xs mt-0.5 ${ok ? 'text-green-600' : 'text-red-600'}`}>
-          {ok
-            ? `Webhook responded with HTTP ${result.status}`
+        <p className={`text-xs mt-0.5 whitespace-pre-wrap break-words ${ok ? 'text-green-600' : 'text-red-600'}`}>
+          {awaiting
+            ? 'An admin must review and approve the output before it appears on this page. You will be notified when it is published.'
+            : ok
+            ? `Completed with HTTP ${result.status}`
             : result.error ?? `HTTP ${result.status}`}
         </p>
       </div>
@@ -73,22 +91,47 @@ export default function Analysis() {
   const { docs } = useDocuments();
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [liveAnalysis, setLiveAnalysis] = useState(null);
-  const [companyName, setCompanyName] = useState('');
+  const [liveAnalysis, setLiveAnalysis] = useState(() => getApprovedRecord()?.analysis ?? null);
+  const [companyName, setCompanyName] = useState(() => getApprovedRecord()?.companyName ?? '');
   const [envError, setEnvError] = useState('');
+  const [awaitingReview, setAwaitingReview] = useState(
+    () => typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem('dd_last_pending_submission')
+  );
 
-  // Read the n8n webhook URL from the environment at runtime
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+  useEffect(() => {
+    const onApproved = () => {
+      const rec = getApprovedRecord();
+      setLiveAnalysis(rec?.analysis ?? null);
+      if (rec?.companyName) setCompanyName(rec.companyName);
+      setAwaitingReview(
+        typeof sessionStorage !== 'undefined' &&
+          !!sessionStorage.getItem('dd_last_pending_submission')
+      );
+    };
+    window.addEventListener('dd-approved-analysis-updated', onApproved);
+    return () => window.removeEventListener('dd-approved-analysis-updated', onApproved);
+  }, []);
+
+  const rawWebhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL?.trim() ?? '';
+  const webhookConfigError =
+    rawWebhookUrl && isWorkflowEditorUrl(rawWebhookUrl)
+      ? 'The analysis endpoint URL is misconfigured (workflow editor link instead of a webhook URL). An administrator can correct this in the deployment environment / admin panel.'
+      : '';
+  const webhookFetchUrl = resolveAnalysisWebhookFetchUrl(rawWebhookUrl);
 
   const eligibleDocs = docs.filter((d) => d.status === 'Ready');
   const hasDocuments = docs.length > 0;
-  const hasWebhook = !!webhookUrl;
+  const hasWebhook = !!webhookFetchUrl && !webhookConfigError;
 
   const runAnalysis = async () => {
     // Runtime guard — show an inline error if the env var is missing
-    if (!webhookUrl) {
+    if (webhookConfigError) {
+      setEnvError(webhookConfigError);
+      return;
+    }
+    if (!webhookFetchUrl) {
       setEnvError(
-        'VITE_N8N_WEBHOOK_URL is not set. Add it to your .env file and restart the dev server.'
+        'Analysis is not available — the server endpoint is not configured. An administrator can set it in the deployment environment.'
       );
       return;
     }
@@ -97,27 +140,57 @@ export default function Analysis() {
     setLoading(true);
     setLastResult(null);
 
+    const submissionId = `sub_${Date.now()}`;
+
     try {
-      const res = await fetch(webhookUrl, {
+      const payload = buildAnalysisWebhookPayload(
+        companyName,
+        `run-${Date.now()}`,
+        docs
+      );
+
+      const bodyStr = JSON.stringify(payload);
+
+      const prevCount = parseInt(localStorage.getItem('diligence_submission_count') || '0', 10);
+      localStorage.setItem('diligence_submission_count', String(isNaN(prevCount) ? 1 : prevCount + 1));
+      const submissionTimestamp = new Date().toISOString();
+      localStorage.setItem('diligence_last_submission', submissionTimestamp);
+      const prevSubs = (() => {
+        try {
+          const p = JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
+          return Array.isArray(p) ? p : [];
+        } catch {
+          return [];
+        }
+      })();
+      localStorage.setItem(
+        'diligence_submissions',
+        JSON.stringify([
+          ...prevSubs,
+          {
+            id: submissionId,
+            filename: companyName.trim() || 'Unknown Company',
+            timestamp: submissionTimestamp,
+            status: 'pending',
+          },
+        ])
+      );
+
+      const res = await fetch(webhookFetchUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/plain, */*',
           'ngrok-skip-browser-warning': 'true',
         },
-        body: JSON.stringify({
-          companyName: companyName.trim() || 'Unknown Company',
-          companyId: `run-${Date.now()}`,
-          documents: docs
-            .filter((d) => d.status === 'Ready')
-            .map((d) => ({
-              type: d.type,
-              content: d.content || `[No content extracted for ${d.name}]`,
-            })),
-        }),
+        body: bodyStr,
       });
 
       if (res.ok) {
         const text = await res.text();
+        // #region agent log
+        try{localStorage.setItem('dbg_b7feaf_rawText',JSON.stringify({ts:Date.now(),len:text.length,preview:text.slice(0,600),full:text.slice(0,4000),containsExpr:/\{\{.*?\}\}/.test(text)}));}catch(e){}
+        // #endregion
         let raw;
         try {
           raw = JSON.parse(text);
@@ -125,26 +198,98 @@ export default function Analysis() {
           // n8n returned plain markdown — treat as string
           raw = text;
         }
+        // #region agent log
+        try{localStorage.setItem('dbg_b7feaf_parsedRaw',JSON.stringify({ts:Date.now(),type:typeof raw,isArray:Array.isArray(raw),isString:typeof raw==='string',keys:typeof raw==='object'&&raw!==null&&!Array.isArray(raw)?Object.keys(raw).slice(0,20):null,strPreview:typeof raw==='string'?raw.slice(0,600):null,firstElemKeys:Array.isArray(raw)&&raw[0]&&typeof raw[0]==='object'?Object.keys(raw[0]).slice(0,20):null}));}catch(e){}
+        // #endregion
         const mapped = mapAuditToAnalysis(raw);
-        setLiveAnalysis(mapped);
-        setLastResult({ success: true, status: res.status });
+        addPendingReview({
+          submissionId,
+          companyName: companyName.trim() || 'Unknown Company',
+          analysis: mapped,
+        });
+        sessionStorage.setItem('dd_last_pending_submission', submissionId);
+        setAwaitingReview(true);
+        setLastResult({ success: true, status: res.status, awaitingReview: true });
+        const siSubs = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
+          } catch {
+            return [];
+          }
+        })();
+        localStorage.setItem(
+          'diligence_submissions',
+          JSON.stringify(siSubs.map((s) => (s.id === submissionId ? { ...s, status: 'awaiting_review' } : s)))
+        );
       } else {
-        setLastResult({ success: false, status: res.status });
+        const errText = await res.text();
+        setLastResult({
+          success: false,
+          status: res.status,
+          error: summarizeWebhookErrorBody(res.status, errText),
+        });
+        const siSubs2 = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
+          } catch {
+            return [];
+          }
+        })();
+        localStorage.setItem(
+          'diligence_submissions',
+          JSON.stringify(siSubs2.map((s) => (s.id === submissionId ? { ...s, status: 'error' } : s)))
+        );
       }
     } catch (err) {
       setLastResult({ success: false, error: err.message });
+      const siSubs3 = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
+        } catch {
+          return [];
+        }
+      })();
+      localStorage.setItem(
+        'diligence_submissions',
+        JSON.stringify(siSubs3.map((s) => (s.id === submissionId ? { ...s, status: 'error' } : s)))
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // All result JSX uses liveAnalysis ?? mockAnalysis so live data displays when
-  // available and mock data shows as a fallback
-  const analysis = liveAnalysis ?? mockAnalysis;
+  const newerPendingCount = liveAnalysis ? getPendingReviews().length : 0;
+
+  const displayAnalysis =
+    liveAnalysis ??
+    (awaitingReview
+      ? {
+          ...mockAnalysis,
+          executiveSummary: {
+            content:
+              'Your analysis output was sent to an administrator. You will be notified when it is approved and published here.',
+            confidence: 0,
+            citations: [],
+          },
+          redFlags: [],
+          missingData: [],
+        }
+      : mockAnalysis);
 
   return (
     <AppLayout title="Analysis">
       <div className="max-w-3xl mx-auto space-y-5">
+
+        {newerPendingCount > 0 && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <AlertCircle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-amber-900 text-sm flex-1">
+              You have {newerPendingCount} newer analysis run
+              {newerPendingCount !== 1 ? 's' : ''} awaiting administrator review. Published results below
+              are from an earlier approved run.
+            </p>
+          </div>
+        )}
 
         {/* ENV error banner */}
         {envError && (
@@ -203,63 +348,13 @@ export default function Analysis() {
             />
           </div>
 
-          {/* Webhook indicator */}
-          <div
-            className={`mt-4 flex items-center gap-2.5 rounded-xl px-4 py-3 border text-xs ${
-              hasWebhook
-                ? 'bg-slate-800 border-slate-600'
-                : 'bg-amber-500/10 border-amber-500/20'
-            }`}
-          >
-            <Webhook size={13} className={hasWebhook ? 'text-slate-400' : 'text-amber-400'} />
-            {hasWebhook ? (
-              <>
-                <span className="text-slate-400">POST to</span>
-                <span className="font-mono text-slate-300 truncate">{webhookUrl}</span>
-              </>
-            ) : (
-              <span className="text-amber-400">
-                VITE_N8N_WEBHOOK_URL is not set —{' '}
-                <span className="font-mono">add it to your .env file</span>
-              </span>
-            )}
-          </div>
-
           {/* Result banner */}
           {lastResult && (
             <div className="mt-4">
-              <WebhookResultBanner
+              <RunResultBanner
                 result={lastResult}
                 onDismiss={() => setLastResult(null)}
               />
-            </div>
-          )}
-
-          {/* Payload preview */}
-          {hasWebhook && (
-            <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-slate-800 font-semibold text-sm">Webhook Payload Preview</h3>
-                <p className="text-slate-400 text-xs mt-0.5">
-                  This JSON is sent to your analysis webhook on each run.
-                </p>
-              </div>
-              <div className="px-5 py-4">
-                <pre className="bg-slate-950 text-green-400 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono scrollbar-thin">
-{JSON.stringify(
-  {
-    companyName: companyName.trim() || 'Unknown Company',
-    companyId: `run-${Date.now()}`,
-    documents: eligibleDocs.map(({ type, name }) => ({
-      type,
-      content: `[content for ${name}]`,
-    })),
-  },
-  null,
-  2
-)}
-                </pre>
-              </div>
             </div>
           )}
 
@@ -282,7 +377,7 @@ export default function Analysis() {
                 </div>
                 <p className="text-slate-500 text-sm font-medium mb-1">No documents uploaded</p>
                 <p className="text-slate-400 text-xs max-w-xs">
-                  Upload documents first, then trigger analysis to send them to your backend.
+                  Upload documents first, then run analysis from this page.
                 </p>
                 <Link
                   to="/documents"
@@ -332,18 +427,46 @@ export default function Analysis() {
           {/* Help text */}
           <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-5 py-4">
             <p className="text-blue-700 text-sm leading-relaxed">
-              <span className="font-semibold">How it works:</span> Clicking "Run Analysis" sends
-              document content to your n8n webhook. The workflow runs AI due diligence and returns
-              a memo. Results appear below. Set{' '}
-              <code className="text-xs bg-blue-100 px-1 py-0.5 rounded font-mono">
-                VITE_N8N_WEBHOOK_URL
-              </code>{' '}
-              in your{' '}
-              <code className="text-xs bg-blue-100 px-1 py-0.5 rounded font-mono">.env</code>{' '}
-              file.
+              <span className="font-semibold">How it works:</span> Run Analysis sends your ready
+              documents for processing. An administrator reviews the output before it is published
+              to this page; you will get a notification when it is ready.
             </p>
           </div>
         </div>
+
+        {/* PDF export — shown after a successful run populated liveAnalysis */}
+        {liveAnalysis && (
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 border-b border-slate-100">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <FileText size={18} className="text-slate-600" />
+                </div>
+                <div>
+                  <h3 className="text-slate-800 font-semibold text-sm">Formatted report (PDF)</h3>
+                  <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">
+                    Download the analysis below as a printable PDF. This uses the same summary,
+                    red flags, and missing-data sections shown on this page.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { exportAnalysisToPdf } = await import('../utils/analysisPdf');
+                  exportAnalysisToPdf({
+                    companyName: companyName.trim() || 'Unknown Company',
+                    analysis: liveAnalysis,
+                  });
+                }}
+                className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex-shrink-0"
+              >
+                <Download size={16} />
+                Download PDF
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Analysis Results ─────────────────────────────────────────────── */}
 
@@ -354,33 +477,33 @@ export default function Analysis() {
               <FileText size={15} className="text-slate-500" />
               <h3 className="text-slate-800 font-semibold text-sm">Executive Summary</h3>
             </div>
-            {(liveAnalysis ?? mockAnalysis).executiveSummary.confidence > 0 && (
+            {displayAnalysis.executiveSummary.confidence > 0 && (
               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                Confidence: {(liveAnalysis ?? mockAnalysis).executiveSummary.confidence}%
+                Confidence: {displayAnalysis.executiveSummary.confidence}%
               </span>
             )}
           </div>
           <div className="px-5 py-4">
             <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-              {analysis.executiveSummary.content || 'No summary available.'}
+              {displayAnalysis.executiveSummary.content || 'No summary available.'}
             </p>
           </div>
         </div>
 
         {/* Red Flags — only rendered when there are findings */}
-        {(liveAnalysis ?? mockAnalysis).redFlags.length > 0 && (
+        {displayAnalysis.redFlags.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <Flag size={15} className="text-red-500" />
               <h3 className="text-slate-800 font-semibold text-sm">
                 Red Flags{' '}
                 <span className="text-slate-400 font-normal text-xs">
-                  ({analysis.redFlags.length})
+                  ({displayAnalysis.redFlags.length})
                 </span>
               </h3>
             </div>
             <div className="divide-y divide-slate-50">
-              {analysis.redFlags.map((flag) => (
+              {displayAnalysis.redFlags.map((flag) => (
                 <div key={flag.id} className="px-5 py-4">
                   <div className="flex items-start gap-3">
                     <span
@@ -410,19 +533,19 @@ export default function Analysis() {
         )}
 
         {/* Missing Data — only rendered when there are flags */}
-        {(liveAnalysis ?? mockAnalysis).missingData.length > 0 && (
+        {displayAnalysis.missingData.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <ClipboardList size={15} className="text-amber-500" />
               <h3 className="text-slate-800 font-semibold text-sm">
                 Missing Data{' '}
                 <span className="text-slate-400 font-normal text-xs">
-                  ({analysis.missingData.length})
+                  ({displayAnalysis.missingData.length})
                 </span>
               </h3>
             </div>
             <div className="divide-y divide-slate-50">
-              {analysis.missingData.map((item) => (
+              {displayAnalysis.missingData.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div
                     className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${

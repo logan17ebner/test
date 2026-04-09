@@ -1,17 +1,16 @@
 import { Link } from 'react-router-dom';
 import {
   FileText,
-  BarChart3,
   Clock,
-  ShieldCheck,
   Upload,
   Zap,
   ArrowRight,
   TrendingUp,
   Activity,
-  Webhook,
+  Settings,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
+import DashboardNotificationBell from '../components/DashboardNotificationBell';
 import { useAuth } from '../context/AuthContext';
 import { useDocuments } from '../context/DocumentsContext';
 import { mockWorkspace } from '../data/mockData';
@@ -28,17 +27,12 @@ function timeAgo(iso) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { docs, uploadWebhookUrl, analysisWebhookUrl } = useDocuments();
+  const { docs } = useDocuments();
   const firstName = user?.name?.split(' ')[0] || 'there';
 
   const readyCount = docs.filter((d) => d.status === 'Ready' || d.status === 'Processing').length;
   const errorCount = docs.filter((d) => d.status === 'Error').length;
   const lastDoc = docs[0];
-
-  const webhooksConfigured = [uploadWebhookUrl, analysisWebhookUrl].filter(Boolean).length;
-  const workspaceHealth = docs.length === 0
-    ? 100
-    : Math.max(0, Math.round(100 - (errorCount / docs.length) * 100));
 
   const overviewCards = [
     {
@@ -52,28 +46,12 @@ export default function Dashboard() {
       to: '/documents',
     },
     {
-      label: 'Webhooks',
-      value: `${webhooksConfigured}/2`,
-      sub: webhooksConfigured === 2 ? 'Fully configured' : 'Setup needed',
-      icon: Webhook,
-      color: webhooksConfigured === 2 ? 'green' : 'amber',
-      to: '/settings',
-    },
-    {
       label: 'Last Upload',
       value: lastDoc ? timeAgo(lastDoc.uploadedAt) : '—',
       sub: lastDoc ? lastDoc.name : 'No uploads yet',
       icon: Clock,
       color: 'purple',
       to: '/documents',
-    },
-    {
-      label: 'Workspace Health',
-      value: `${workspaceHealth}%`,
-      sub: errorCount > 0 ? `${errorCount} upload error${errorCount !== 1 ? 's' : ''}` : 'All clear',
-      icon: ShieldCheck,
-      color: workspaceHealth >= 80 ? 'green' : 'amber',
-      to: '/settings',
     },
   ];
 
@@ -85,7 +63,10 @@ export default function Dashboard() {
   };
 
   return (
-    <AppLayout title="Dashboard">
+    <AppLayout
+      title="Dashboard"
+      actions={<DashboardNotificationBell errorCount={errorCount} />}
+    >
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Greeting */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -104,23 +85,8 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Webhook setup nudge */}
-        {webhooksConfigured < 2 && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-            <Webhook size={15} className="text-blue-500 flex-shrink-0" />
-            <p className="text-blue-700 text-sm flex-1">
-              {webhooksConfigured === 0
-                ? 'No webhooks configured yet — connect your backend in Settings to enable document processing and analysis.'
-                : 'One webhook is missing — finish configuring in Settings.'}
-            </p>
-            <Link to="/settings" className="text-blue-700 font-semibold text-sm underline hover:text-blue-900 flex-shrink-0">
-              Configure →
-            </Link>
-          </div>
-        )}
-
         {/* Overview cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 max-w-2xl">
           {overviewCards.map(({ label, value, sub, icon: Icon, color, to }) => {
             const c = colorMap[color];
             return (
@@ -213,9 +179,9 @@ export default function Dashboard() {
                 </Link>
                 <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
                   <div className="w-7 h-7 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <Webhook size={13} className="text-purple-500" />
+                    <Settings size={13} className="text-purple-500" />
                   </div>
-                  <span className="text-slate-700 text-sm font-medium">Configure webhooks</span>
+                  <span className="text-slate-700 text-sm font-medium">Settings</span>
                   <ArrowRight size={13} className="ml-auto text-slate-300 group-hover:text-slate-400" />
                 </Link>
                 <Link to="/analysis" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
@@ -246,28 +212,8 @@ export default function Dashboard() {
                   <span className="text-slate-300 text-xs font-medium">{docs.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 text-xs">Webhooks</span>
-                  <span className={`text-xs font-medium ${webhooksConfigured === 2 ? 'text-green-400' : 'text-amber-400'}`}>
-                    {webhooksConfigured}/2 configured
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
                   <span className="text-slate-500 text-xs">Retention</span>
                   <span className="text-slate-300 text-xs font-medium">{mockWorkspace.retentionDays} days</span>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-700/50">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-slate-500 text-xs">Health</span>
-                  <span className={`text-xs font-semibold ${workspaceHealth >= 80 ? 'text-green-400' : 'text-amber-400'}`}>
-                    {workspaceHealth}%
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${workspaceHealth >= 80 ? 'bg-green-400' : 'bg-amber-400'}`}
-                    style={{ width: `${workspaceHealth}%` }}
-                  />
                 </div>
               </div>
             </div>

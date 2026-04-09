@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { mockWorkspace } from '../data/mockData';
@@ -68,6 +69,34 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           </NavLink>
         ))}
       </nav>
+
+      <div className="px-3 py-3 border-t border-slate-700/50">
+        <p className="px-3 pb-2 text-slate-500 text-[10px] font-semibold uppercase tracking-wider">
+          Admin
+        </p>
+        <NavLink
+          to="/admin"
+          onClick={() => setMobileOpen && setMobileOpen(false)}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
+              isActive
+                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/50'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <KeyRound
+                size={17}
+                className={isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}
+              />
+              <span>Admin login</span>
+              {isActive && <ChevronRight size={14} className="ml-auto text-blue-400/60" />}
+            </>
+          )}
+        </NavLink>
+      </div>
 
       {/* User footer */}
       <div className="px-3 py-3 border-t border-slate-700/50">

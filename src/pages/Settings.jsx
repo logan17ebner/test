@@ -6,14 +6,9 @@ import {
   Trash2,
   AlertTriangle,
   X,
-  CheckCircle,
   Database,
   Clock,
   FileText,
-  Webhook,
-  Eye,
-  EyeOff,
-  Save,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import { useAuth } from '../context/AuthContext';
@@ -99,111 +94,10 @@ function InfoField({ label, value }) {
   );
 }
 
-function WebhookField({ label, description, value, onSave, placeholder }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [show, setShow] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    onSave(draft.trim());
-    setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const handleEdit = () => {
-    setDraft(value);
-    setEditing(true);
-    setSaved(false);
-  };
-
-  const isValid = (url) => {
-    try { new URL(url); return true; } catch { return false; }
-  };
-
-  return (
-    <div className="py-4 border-b border-slate-100 last:border-0">
-      <div className="flex items-start justify-between gap-4 mb-1.5">
-        <div>
-          <p className="text-slate-700 text-sm font-semibold">{label}</p>
-          <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{description}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-          {saved && <CheckCircle size={14} className="text-green-500" />}
-          {!editing ? (
-            <button
-              onClick={handleEdit}
-              className="text-blue-500 hover:text-blue-600 text-xs font-semibold transition-colors"
-            >
-              {value ? 'Edit' : 'Add'}
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={draft.length > 0 && !isValid(draft)}
-              className="flex items-center gap-1 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors"
-            >
-              <Save size={11} /> Save
-            </button>
-          )}
-        </div>
-      </div>
-
-      {editing ? (
-        <div className="mt-2">
-          <input
-            type={show ? 'text' : 'password'}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={placeholder}
-            autoFocus
-            className="w-full border border-slate-200 focus:border-blue-400 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-mono outline-none transition-colors focus:ring-2 focus:ring-blue-500/20"
-          />
-          {draft.length > 0 && !isValid(draft) && (
-            <p className="text-red-500 text-xs mt-1">Please enter a valid URL (starting with https://)</p>
-          )}
-          <button
-            onClick={() => setShow((v) => !v)}
-            className="mt-1.5 text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1"
-          >
-            {show ? <EyeOff size={12} /> : <Eye size={12} />}
-            {show ? 'Hide URL' : 'Show URL'}
-          </button>
-        </div>
-      ) : (
-        <div className="mt-2">
-          {value ? (
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-              <Webhook size={13} className="text-blue-400 flex-shrink-0" />
-              <span className="text-slate-600 text-xs font-mono truncate">
-                {value.replace(/^(https?:\/\/[^/]+).*/, '$1')}/••••••••
-              </span>
-              <span className="ml-auto bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full border border-green-200 flex-shrink-0">
-                Configured
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 border-dashed rounded-xl px-3 py-2">
-              <Webhook size={13} className="text-amber-400 flex-shrink-0" />
-              <span className="text-amber-600 text-xs">Not configured — click Add to connect your backend</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Settings() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const {
-    docs,
-    clearAllDocuments,
-    uploadWebhookUrl, saveUploadWebhook,
-    analysisWebhookUrl, saveAnalysisWebhook,
-  } = useDocuments();
+  const { docs, clearAllDocuments } = useDocuments();
 
   const [showClearDocs, setShowClearDocs] = useState(false);
   const [showDeleteWorkspace, setShowDeleteWorkspace] = useState(false);
@@ -221,33 +115,6 @@ export default function Settings() {
   return (
     <AppLayout title="Settings">
       <div className="max-w-2xl mx-auto space-y-5">
-
-        {/* Webhooks — most important, shown first */}
-        <Section
-          title="Webhooks"
-          icon={Webhook}
-          description="Connect your backend to receive documents and trigger analysis"
-        >
-          <WebhookField
-            label="Document Upload Webhook"
-            description="Called with multipart/form-data when a user confirms an upload. Receives the file plus metadata (filename, type, size, documentId, uploadedAt)."
-            value={uploadWebhookUrl}
-            onSave={saveUploadWebhook}
-            placeholder="https://your-backend.com/webhooks/upload"
-          />
-          <WebhookField
-            label="Analysis Trigger Webhook"
-            description='Called with application/json when "Run Analysis" is clicked. Receives triggeredAt and a list of document IDs and metadata.'
-            value={analysisWebhookUrl}
-            onSave={saveAnalysisWebhook}
-            placeholder="https://your-backend.com/webhooks/analyze"
-          />
-          <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-            <p className="text-slate-500 text-xs leading-relaxed">
-              Webhook URLs are stored in your browser's localStorage and never sent to any third-party server. Rotate or remove them at any time.
-            </p>
-          </div>
-        </Section>
 
         {/* Workspace */}
         <Section title="Workspace" icon={Building2}>
@@ -350,7 +217,7 @@ export default function Settings() {
       {showDeleteWorkspace && (
         <ConfirmDialog
           title="Delete workspace"
-          message="This will delete your workspace, sign you out, and clear all local data including webhook configuration. This action is completely irreversible."
+          message="This will delete your workspace, sign you out, and clear all local data. This action is completely irreversible."
           confirmLabel="Delete workspace"
           confirmClass="bg-red-500 hover:bg-red-600 text-white"
           requireTyped="delete workspace"

@@ -12,12 +12,9 @@ import {
   ChevronUp,
   ChevronDown,
   Loader2,
-  Webhook,
-  AlertTriangle,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import { useDocuments } from '../context/DocumentsContext';
-import { Link } from 'react-router-dom';
 
 const FILE_ICONS = {
   PDF: FileText,
@@ -62,7 +59,7 @@ function SortIcon({ column, sortBy, sortDir }) {
     : <ChevronDown size={13} className="text-blue-500" />;
 }
 
-function ConfirmModal({ file, webhookUrl, onConfirm, onCancel }) {
+function ConfirmModal({ file, onConfirm, onCancel }) {
   const [checked, setChecked] = useState(false);
 
   return (
@@ -85,36 +82,6 @@ function ConfirmModal({ file, webhookUrl, onConfirm, onCancel }) {
                 {(file.size / 1024 / 1024).toFixed(2)} MB · {file.name.split('.').pop().toUpperCase()}
               </p>
             </div>
-          </div>
-
-          {/* Webhook destination */}
-          <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 border text-xs ${
-            webhookUrl
-              ? 'bg-blue-50 border-blue-100 text-blue-700'
-              : 'bg-amber-50 border-amber-100 text-amber-700'
-          }`}>
-            {webhookUrl ? (
-              <>
-                <Webhook size={14} className="flex-shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="font-semibold mb-0.5">Will be sent to webhook</p>
-                  <p className="font-mono truncate opacity-75">{webhookUrl}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold">No webhook configured</p>
-                  <p className="opacity-75 mt-0.5">
-                    Document will be tracked locally only.{' '}
-                    <Link to="/settings" onClick={onCancel} className="underline font-medium">
-                      Configure in Settings →
-                    </Link>
-                  </p>
-                </div>
-              </>
-            )}
           </div>
 
           {/* Consent checkbox */}
@@ -186,7 +153,7 @@ function DeleteModal({ doc, onConfirm, onCancel }) {
 }
 
 export default function Documents() {
-  const { docs, uploadDocument, deleteDocument, uploadWebhookUrl } = useDocuments();
+  const { docs, uploadDocument, deleteDocument } = useDocuments();
   const [pendingFile, setPendingFile] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -242,7 +209,7 @@ export default function Documents() {
     setUploadError('');
     const result = await uploadDocument(file);
     if (!result.success && !result.skipped) {
-      setUploadError(`Webhook delivery failed: ${result.error ?? `HTTP ${result.status}`}`);
+      setUploadError(`Upload failed: ${result.error ?? `HTTP ${result.status}`}`);
     }
   };
 
@@ -257,22 +224,6 @@ export default function Documents() {
   return (
     <AppLayout title="Documents">
       <div className="max-w-5xl mx-auto space-y-5">
-
-        {/* Webhook status banner */}
-        {!uploadWebhookUrl && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <Webhook size={15} className="text-amber-500 flex-shrink-0" />
-            <p className="text-amber-700 text-sm flex-1">
-              No upload webhook configured — documents will be tracked locally only.
-            </p>
-            <Link
-              to="/settings"
-              className="text-amber-700 font-semibold text-sm underline hover:text-amber-900 flex-shrink-0"
-            >
-              Configure →
-            </Link>
-          </div>
-        )}
 
         {uploadError && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -309,13 +260,7 @@ export default function Documents() {
           <p className="text-slate-700 font-semibold text-base mb-1">
             {isDragging ? 'Drop to upload' : 'Drop files here or click to browse'}
           </p>
-          <p className="text-slate-400 text-sm mb-3">Accepts PDF, DOCX, XLSX — up to 50 MB each</p>
-          {uploadWebhookUrl && (
-            <div className="inline-flex items-center gap-1.5 text-xs text-blue-500 bg-blue-50 border border-blue-100 rounded-full px-3 py-1">
-              <Webhook size={11} />
-              Sends to webhook on confirm
-            </div>
-          )}
+          <p className="text-slate-400 text-sm">Accepts PDF, DOCX, XLSX — up to 50 MB each</p>
         </div>
 
         {/* Document library */}
@@ -335,7 +280,7 @@ export default function Documents() {
               </div>
               <h3 className="text-slate-700 font-semibold text-base mb-2">No documents yet</h3>
               <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
-                Upload your first document above. Each upload is sent to your configured webhook for processing.
+                Upload your first document above to add it to your workspace.
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -413,7 +358,6 @@ export default function Documents() {
       {pendingFile && (
         <ConfirmModal
           file={pendingFile}
-          webhookUrl={uploadWebhookUrl}
           onConfirm={confirmUpload}
           onCancel={() => setPendingFile(null)}
         />
