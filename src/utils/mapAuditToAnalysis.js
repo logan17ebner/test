@@ -317,6 +317,27 @@ function extractAuditFromDeepStrings(root) {
   return null;
 }
 
+function normalizeKPIs(data) {
+  let raw = data.kpis ?? data.metrics ?? data.kpi_extraction ?? [];
+  if (!Array.isArray(raw)) {
+    if (raw && typeof raw === 'object') {
+      raw = Object.entries(raw).map(([metric, value]) => ({ metric, value: String(value) }));
+    } else {
+      return [];
+    }
+  }
+  return raw.map((k, i) => ({
+    id: i,
+    metric: k.metric ?? k.name ?? k.label ?? `Metric ${i + 1}`,
+    value: k.value != null ? String(k.value) : '—',
+    confidence: k.confidence ?? 'medium',
+    confidenceScore: (() => {
+      const s = Number(k.confidenceScore ?? k.confidence_score ?? k.score ?? 50);
+      return s <= 10 ? s * 10 : s;
+    })(),
+  }));
+}
+
 export function mapAuditToAnalysis(raw) {
   const normalized = normalizeN8nWebhookResponse(raw);
   // #region agent log
@@ -377,8 +398,7 @@ export function mapAuditToAnalysis(raw) {
       citations: [],
     },
 
-    // KPI extraction comes from specialist agents — leave empty for now
-    kpis: [],
+    kpis: normalizeKPIs(data),
 
     market: {
       // Market intelligence comes from specialist agents — leave empty for now
@@ -403,5 +423,17 @@ export function mapAuditToAnalysis(raw) {
       priority: 'High',
       checked: false,
     })),
+
+    recommendation: data.investment_recommendation ?? 'WATCH',
+    diligenceScore: Number(data.overall_diligence_score ?? 5),
+    confidenceScores: (() => {
+      const cs = data.confidence_scores ?? {};
+      const normalized = {};
+      for (const [k, v] of Object.entries(cs)) {
+        const n = Number(v);
+        normalized[k] = n <= 10 ? n * 10 : n;
+      }
+      return normalized;
+    })(),
   };
 }

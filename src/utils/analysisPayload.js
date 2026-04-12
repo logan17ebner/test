@@ -2,8 +2,8 @@
  * Large JSON bodies (e.g. base64 data URIs for PDFs) often trigger n8n or gateway
  * errors (500/413). Cap per-document and total content size for the webhook POST.
  */
-const MAX_CHARS_PER_DOCUMENT = 220_000;
-const MAX_TOTAL_CONTENT_CHARS = 750_000;
+const MAX_CHARS_PER_DOCUMENT = 500_000;
+const MAX_TOTAL_CONTENT_CHARS = 1_500_000;
 
 function truncateContent(content, docName, maxLen, reasonSuffix) {
   if (!content || content.length <= maxLen) return content;
@@ -61,5 +61,11 @@ export function buildAnalysisWebhookPayload(companyName, companyId, docs) {
     companyName: companyName.trim() || 'Unknown Company',
     companyId,
     documents,
+    sections: {
+      kpi: '',
+      market: '',
+      traction: '',
+      redFlags: '',
+    },
   };
 }

@@ -1,19 +1,18 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Activity, Flag, TrendingUp, ClipboardList, BarChart3, Upload, ArrowRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import {
-  FileText,
-  Clock,
-  Upload,
-  Zap,
-  ArrowRight,
-  TrendingUp,
-  Activity,
-  Settings,
-} from 'lucide-react';
 import AppLayout from '../components/AppLayout';
 import DashboardNotificationBell from '../components/DashboardNotificationBell';
+import DiligenceScoreHero from '../components/DiligenceScoreHero';
+import AgentRadarChart from '../components/AgentRadarChart';
+import RedFlagsChart from '../components/RedFlagsChart';
+import KPITable from '../components/KPITable';
+import MissingDataProgress from '../components/MissingDataProgress';
+import ComparableCompanies from '../components/ComparableCompanies';
 import { useAuth } from '../context/AuthContext';
 import { useDocuments } from '../context/DocumentsContext';
-import { mockWorkspace } from '../data/mockData';
+import { getApprovedRecord } from '../utils/analysisReviewQueue';
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -25,42 +24,36 @@ function timeAgo(iso) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function MetricPanel({ title, icon: Icon, children, fullWidth = false }) {
+  return (
+    <div className={`bg-white border border-slate-200 rounded-2xl overflow-hidden${fullWidth ? ' lg:col-span-2' : ''}`}>
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+        <Icon size={15} className="text-slate-500" />
+        <h3 className="text-slate-800 font-semibold text-sm">{title}</h3>
+      </div>
+      <div className="px-5 py-4">{children}</div>
+    </div>
+  );
+}
+
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
+const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } } };
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { docs } = useDocuments();
+  const [approvedRecord, setApprovedRecord] = useState(() => getApprovedRecord());
+
+  useEffect(() => {
+    const onUpdate = () => setApprovedRecord(getApprovedRecord());
+    window.addEventListener('dd-approved-analysis-updated', onUpdate);
+    return () => window.removeEventListener('dd-approved-analysis-updated', onUpdate);
+  }, []);
+
   const firstName = user?.name?.split(' ')[0] || 'there';
-
-  const readyCount = docs.filter((d) => d.status === 'Ready' || d.status === 'Processing').length;
+  const analysis = approvedRecord?.analysis ?? null;
+  const companyName = approvedRecord?.companyName ?? '';
   const errorCount = docs.filter((d) => d.status === 'Error').length;
-  const lastDoc = docs[0];
-
-  const overviewCards = [
-    {
-      label: 'Documents',
-      value: docs.length,
-      sub: docs.length === 0
-        ? 'No documents yet'
-        : `${readyCount} active · ${errorCount} error${errorCount !== 1 ? 's' : ''}`,
-      icon: FileText,
-      color: 'blue',
-      to: '/documents',
-    },
-    {
-      label: 'Last Upload',
-      value: lastDoc ? timeAgo(lastDoc.uploadedAt) : '—',
-      sub: lastDoc ? lastDoc.name : 'No uploads yet',
-      icon: Clock,
-      color: 'purple',
-      to: '/documents',
-    },
-  ];
-
-  const colorMap = {
-    blue:   { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: 'text-blue-400',   value: 'text-blue-500' },
-    purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: 'text-purple-400', value: 'text-purple-500' },
-    amber:  { bg: 'bg-amber-500/10',  border: 'border-amber-500/20',  icon: 'text-amber-400',  value: 'text-amber-500' },
-    green:  { bg: 'bg-green-500/10',  border: 'border-green-500/20',  icon: 'text-green-400',  value: 'text-green-500' },
-  };
 
   return (
     <AppLayout
@@ -68,157 +61,122 @@ export default function Dashboard() {
       actions={<DashboardNotificationBell errorCount={errorCount} />}
     >
       <div className="max-w-5xl mx-auto space-y-6">
+
         {/* Greeting */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-slate-900 font-bold text-xl sm:text-2xl tracking-tight">
+            <h2 className="text-slate-900 font-bold text-xl tracking-tight">
               Good morning, {firstName}
             </h2>
-            <p className="text-slate-500 text-sm mt-0.5">{mockWorkspace.name}</p>
+            <p className="text-slate-500 text-sm mt-0.5">
+              {analysis ? `Viewing: ${companyName}` : 'No analysis published yet'}
+            </p>
           </div>
           <Link
             to="/documents"
             className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <Upload size={15} />
-            Upload Document
+            Upload
           </Link>
         </div>
 
-        {/* Overview cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 max-w-2xl">
-          {overviewCards.map(({ label, value, sub, icon: Icon, color, to }) => {
-            const c = colorMap[color];
-            return (
-              <Link
-                key={label}
-                to={to}
-                className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 hover:shadow-sm transition-all group"
-              >
-                <div className={`w-9 h-9 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center mb-3`}>
-                  <Icon size={17} className={c.icon} />
-                </div>
-                <p className={`text-2xl font-bold ${c.value} mb-0.5`}>{value}</p>
-                <p className="text-slate-700 text-sm font-medium leading-tight">{label}</p>
-                <p className="text-slate-400 text-xs mt-1 leading-tight truncate">{sub}</p>
+        {/* No-analysis CTA */}
+        {!analysis && (
+          <div className="bg-[#0F172A] border border-slate-700/50 rounded-2xl px-6 py-10 flex flex-col items-center text-center gap-4">
+            <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center">
+              <BarChart3 size={22} className="text-blue-400" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-base mb-1">No analysis available yet</p>
+              <p className="text-slate-400 text-sm max-w-sm">Upload your documents, run analysis, and once an administrator approves the output your metrics will appear here.</p>
+            </div>
+            <div className="flex gap-3">
+              <Link to="/documents" className="inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+                <Upload size={14} /> Upload docs
               </Link>
-            );
-          })}
-        </div>
+              <Link to="/analysis" className="inline-flex items-center gap-1.5 border border-slate-600 text-slate-300 hover:text-white hover:border-slate-400 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+                Run analysis <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        )}
 
-        <div className="grid lg:grid-cols-3 gap-4">
-          {/* Recent documents */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl">
+        {/* Score hero */}
+        {analysis && (
+          <DiligenceScoreHero
+            companyName={companyName}
+            recommendation={analysis.recommendation}
+            diligenceScore={analysis.diligenceScore}
+          />
+        )}
+
+        {/* Metrics grid */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+        >
+          <motion.div variants={item}>
+            <MetricPanel title="Agent Confidence" icon={Activity}>
+              <AgentRadarChart confidenceScores={analysis?.confidenceScores ?? {}} />
+            </MetricPanel>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <MetricPanel title="Red Flags" icon={Flag}>
+              <RedFlagsChart redFlags={analysis?.redFlags ?? []} />
+            </MetricPanel>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <MetricPanel title="KPI Extraction" icon={TrendingUp}>
+              <KPITable kpis={analysis?.kpis ?? []} />
+            </MetricPanel>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <MetricPanel title="Missing Data" icon={ClipboardList}>
+              <MissingDataProgress missingData={analysis?.missingData ?? []} />
+            </MetricPanel>
+          </motion.div>
+
+          <motion.div variants={item} className="lg:col-span-2">
+            <MetricPanel title="Comparable Companies" icon={BarChart3} fullWidth>
+              <ComparableCompanies comparables={analysis?.market?.comparables ?? []} />
+            </MetricPanel>
+          </motion.div>
+        </motion.div>
+
+        {/* Recent documents — compact */}
+        {docs.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Activity size={16} className="text-slate-500" />
+                <FileText size={15} className="text-slate-500" />
                 <h3 className="text-slate-800 font-semibold text-sm">Recent Documents</h3>
               </div>
-              <Link to="/documents" className="text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1 transition-colors">
-                View all <ArrowRight size={12} />
+              <Link to="/documents" className="text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1">
+                View all <ArrowRight size={11} />
               </Link>
             </div>
-
-            {docs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center mb-3">
-                  <FileText size={18} className="text-slate-300" />
-                </div>
-                <p className="text-slate-500 text-sm font-medium mb-1">No documents uploaded yet</p>
-                <p className="text-slate-400 text-xs">
-                  Upload your first document to get started.
-                </p>
-                <Link
-                  to="/documents"
-                  className="mt-4 inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-600 text-sm font-medium"
-                >
-                  <Upload size={13} /> Upload a document
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {docs.slice(0, 8).map((doc) => {
-                  const statusColor = {
-                    Ready: 'text-green-500',
-                    Processing: 'text-amber-500',
-                    Uploading: 'text-blue-500',
-                    Error: 'text-red-500',
-                  }[doc.status] ?? 'text-slate-400';
-                  return (
-                    <div key={doc.id} className="flex items-center gap-3.5 px-5 py-3.5">
-                      <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FileText size={13} className="text-blue-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-slate-700 text-sm font-medium truncate">{doc.name}</p>
-                        <p className="text-slate-400 text-xs">{timeAgo(doc.uploadedAt)}</p>
-                      </div>
-                      <span className={`text-xs font-medium ${statusColor} flex-shrink-0`}>
-                        {doc.status}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Quick actions + workspace panel */}
-          <div className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-2xl">
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-slate-800 font-semibold text-sm">Quick Actions</h3>
-              </div>
-              <div className="p-3 space-y-1.5">
-                <Link to="/documents" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
-                  <div className="w-7 h-7 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <Upload size={13} className="text-blue-500" />
+            <div className="divide-y divide-slate-50">
+              {docs.slice(0, 5).map((doc) => {
+                const statusColor = { Ready: 'text-green-500', Processing: 'text-amber-500', Uploading: 'text-blue-500', Error: 'text-red-500' }[doc.status] ?? 'text-slate-400';
+                return (
+                  <div key={doc.id} className="flex items-center gap-3.5 px-5 py-3">
+                    <FileText size={13} className="text-blue-400 flex-shrink-0" />
+                    <span className="text-slate-700 text-sm flex-1 truncate">{doc.name}</span>
+                    <span className="text-slate-400 text-xs">{timeAgo(doc.uploadedAt)}</span>
+                    <span className={`text-xs font-medium ${statusColor}`}>{doc.status}</span>
                   </div>
-                  <span className="text-slate-700 text-sm font-medium">Upload document</span>
-                  <ArrowRight size={13} className="ml-auto text-slate-300 group-hover:text-slate-400" />
-                </Link>
-                <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
-                  <div className="w-7 h-7 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <Settings size={13} className="text-purple-500" />
-                  </div>
-                  <span className="text-slate-700 text-sm font-medium">Settings</span>
-                  <ArrowRight size={13} className="ml-auto text-slate-300 group-hover:text-slate-400" />
-                </Link>
-                <Link to="/analysis" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
-                  <div className="w-7 h-7 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <Zap size={13} className="text-green-500" />
-                  </div>
-                  <span className="text-slate-700 text-sm font-medium">Run analysis</span>
-                  <ArrowRight size={13} className="ml-auto text-slate-300 group-hover:text-slate-400" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Workspace info */}
-            <div className="bg-[#0F172A] border border-slate-700/50 rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={15} className="text-blue-400" />
-                <h3 className="text-slate-200 font-semibold text-sm">Workspace</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 text-xs">Plan</span>
-                  <span className="text-slate-300 text-xs font-medium bg-blue-500/15 border border-blue-500/20 rounded-full px-2 py-0.5">
-                    {mockWorkspace.plan}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 text-xs">Documents</span>
-                  <span className="text-slate-300 text-xs font-medium">{docs.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 text-xs">Retention</span>
-                  <span className="text-slate-300 text-xs font-medium">{mockWorkspace.retentionDays} days</span>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
-        </div>
+        )}
+
       </div>
     </AppLayout>
   );

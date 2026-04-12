@@ -19,9 +19,9 @@ import { mapAuditToAnalysis } from '../utils/mapAuditToAnalysis';
 import {
   isWorkflowEditorUrl,
   resolveAnalysisWebhookFetchUrl,
-  summarizeWebhookErrorBody,
 } from '../utils/analysisWebhook';
 import { buildAnalysisWebhookPayload } from '../utils/analysisPayload';
+import { runDiligenceWorkflow } from '../utils/runDiligenceWorkflow';
 import {
   addPendingReview,
   getApprovedRecord,
@@ -118,10 +118,11 @@ export default function Analysis() {
       ? 'The analysis endpoint URL is misconfigured (workflow editor link instead of a webhook URL). An administrator can correct this in the deployment environment / admin panel.'
       : '';
   const webhookFetchUrl = resolveAnalysisWebhookFetchUrl(rawWebhookUrl);
+  const hasSupabaseKey = !!import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
   const eligibleDocs = docs.filter((d) => d.status === 'Ready');
   const hasDocuments = docs.length > 0;
-  const hasWebhook = !!webhookFetchUrl && !webhookConfigError;
+  const hasWebhook = !!webhookFetchUrl && !webhookConfigError && hasSupabaseKey;
 
   const runAnalysis = async () => {
     // Runtime guard — show an inline error if the env var is missing
@@ -135,6 +136,12 @@ export default function Analysis() {
       );
       return;
     }
+    if (!hasSupabaseKey) {
+      setEnvError(
+        'Analysis requires VITE_SUPABASE_ANON_KEY in your environment so completed runs can be loaded from Supabase.'
+      );
+      return;
+    }
 
     setEnvError('');
     setLoading(true);
@@ -145,11 +152,9 @@ export default function Analysis() {
     try {
       const payload = buildAnalysisWebhookPayload(
         companyName,
-        `run-${Date.now()}`,
+        submissionId,
         docs
       );
-
-      const bodyStr = JSON.stringify(payload);
 
       const prevCount = parseInt(localStorage.getItem('diligence_submission_count') || '0', 10);
       localStorage.setItem('diligence_submission_count', String(isNaN(prevCount) ? 1 : prevCount + 1));
@@ -176,70 +181,32 @@ export default function Analysis() {
         ])
       );
 
-      const res = await fetch(webhookFetchUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/plain, */*',
-          'ngrok-skip-browser-warning': 'true',
-        },
-        body: bodyStr,
-      });
+      const raw = await runDiligenceWorkflow(
+        payload.companyName,
+        payload.companyId,
+        payload.documents
+      );
 
-      if (res.ok) {
-        const text = await res.text();
-        // #region agent log
-        try{localStorage.setItem('dbg_b7feaf_rawText',JSON.stringify({ts:Date.now(),len:text.length,preview:text.slice(0,600),full:text.slice(0,4000),containsExpr:/\{\{.*?\}\}/.test(text)}));}catch(e){}
-        // #endregion
-        let raw;
+      const mapped = mapAuditToAnalysis(raw);
+      addPendingReview({
+        submissionId,
+        companyName: companyName.trim() || 'Unknown Company',
+        analysis: mapped,
+      });
+      sessionStorage.setItem('dd_last_pending_submission', submissionId);
+      setAwaitingReview(true);
+      setLastResult({ success: true, status: 200, awaitingReview: true });
+      const siSubs = (() => {
         try {
-          raw = JSON.parse(text);
+          return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
         } catch {
-          // n8n returned plain markdown — treat as string
-          raw = text;
+          return [];
         }
-        // #region agent log
-        try{localStorage.setItem('dbg_b7feaf_parsedRaw',JSON.stringify({ts:Date.now(),type:typeof raw,isArray:Array.isArray(raw),isString:typeof raw==='string',keys:typeof raw==='object'&&raw!==null&&!Array.isArray(raw)?Object.keys(raw).slice(0,20):null,strPreview:typeof raw==='string'?raw.slice(0,600):null,firstElemKeys:Array.isArray(raw)&&raw[0]&&typeof raw[0]==='object'?Object.keys(raw[0]).slice(0,20):null}));}catch(e){}
-        // #endregion
-        const mapped = mapAuditToAnalysis(raw);
-        addPendingReview({
-          submissionId,
-          companyName: companyName.trim() || 'Unknown Company',
-          analysis: mapped,
-        });
-        sessionStorage.setItem('dd_last_pending_submission', submissionId);
-        setAwaitingReview(true);
-        setLastResult({ success: true, status: res.status, awaitingReview: true });
-        const siSubs = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
-          } catch {
-            return [];
-          }
-        })();
-        localStorage.setItem(
-          'diligence_submissions',
-          JSON.stringify(siSubs.map((s) => (s.id === submissionId ? { ...s, status: 'awaiting_review' } : s)))
-        );
-      } else {
-        const errText = await res.text();
-        setLastResult({
-          success: false,
-          status: res.status,
-          error: summarizeWebhookErrorBody(res.status, errText),
-        });
-        const siSubs2 = (() => {
-          try {
-            return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
-          } catch {
-            return [];
-          }
-        })();
-        localStorage.setItem(
-          'diligence_submissions',
-          JSON.stringify(siSubs2.map((s) => (s.id === submissionId ? { ...s, status: 'error' } : s)))
-        );
-      }
+      })();
+      localStorage.setItem(
+        'diligence_submissions',
+        JSON.stringify(siSubs.map((s) => (s.id === submissionId ? { ...s, status: 'awaiting_review' } : s)))
+      );
     } catch (err) {
       setLastResult({ success: false, error: err.message });
       const siSubs3 = (() => {
