@@ -16,7 +16,7 @@ export default function App() {
   return (
     <AuthProvider>
       <DocumentsProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/test">
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />

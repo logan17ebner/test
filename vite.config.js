@@ -79,6 +79,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    base: '/test/',
     plugins: [
       /**
        * Browsers send `Origin` on fetch POSTs. A Vite dev middleware path was
