@@ -1,7 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveAnalysisWebhookFetchUrl } from './analysisWebhook';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 const supabaseUrl = 'https://ohztnzrivotdueqafquw.supabase.co';
+
+async function extractPDFText(file) {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pages = await Promise.all(
+    Array.from({ length: pdf.numPages }, (_, i) =>
+      pdf.getPage(i + 1).then(p => p.getTextContent()).then(tc => tc.items.map(item => item.str).join(' '))
+    )
+  );
+  return pages.join('\n\n');
+}
 
 /**
  * @param {string} companyName
@@ -24,6 +38,18 @@ export async function runDiligenceWorkflow(companyName, companyId, documents) {
     throw new Error('Analysis webhook URL is not configured (VITE_N8N_WEBHOOK_URL).');
   }
 
+  const enrichedDocuments = await Promise.all(
+    documents.map(async doc => {
+      if (doc.content && !doc.content.startsWith('[No content')) return doc;
+      const file = doc instanceof File ? doc : doc.file;
+      if (file instanceof File) {
+        const content = await extractPDFText(file);
+        return { name: file.name, type: 'PDF', content };
+      }
+      return { ...doc, content: '[Could not extract text]' };
+    })
+  );
+
   // 1. Fire and forget — webhook responds immediately
   const res = await fetch(n8nWebhookUrl, {
     method: 'POST',
@@ -32,7 +58,7 @@ export async function runDiligenceWorkflow(companyName, companyId, documents) {
       Accept: 'application/json, text/plain, */*',
       'ngrok-skip-browser-warning': 'true',
     },
-    body: JSON.stringify({ companyName, companyId, documents }),
+    body: JSON.stringify({ companyName, companyId, documents: enrichedDocuments }),
   });
 
   if (!res.ok) throw new Error(`Webhook error: ${res.status}`);

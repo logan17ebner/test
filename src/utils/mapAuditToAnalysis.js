@@ -398,12 +398,14 @@ export function mapAuditToAnalysis(raw) {
       citations: [],
     },
 
-    kpis: normalizeKPIs(data),
+    kpis: normalizeKPIs(normalized),
 
     market: {
-      // Market intelligence comes from specialist agents — leave empty for now
       bullets: [],
       confidence: score * 10,
+      comparables: Array.isArray(normalized?.market?.comparables)
+        ? normalized.market.comparables
+        : [],
     },
 
     redFlags: data.audit_findings

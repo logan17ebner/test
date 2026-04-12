@@ -1,16 +1,54 @@
-# React + Vite
+# DiligenceAI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite app for document intake, company-scoped analysis runs, and review flows. Analysis posts to an **n8n** webhook with **plain text** extracted from PDFs in the browser (**pdf.js**), then polls **Supabase** until the run completes.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node 18+ (npm)
+- Environment variables (see below)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+cp .env.example .env.local
+# Edit .env.local — required for analysis runs
+npm run dev
+```
 
-## Expanding the ESLint configuration
+Open the URL Vite prints (default `http://localhost:5173`).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_N8N_WEBHOOK_URL` | n8n **webhook production URL** (path contains `/webhook/`). Do not use the workflow editor URL. |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key — used to poll `dilligencetable` until `status === 'complete'` after the webhook responds. |
+
+Copy `.env.example` to `.env.local` and fill in values. `.env.local` is gitignored.
+
+## How analysis works (documents → n8n)
+
+1. **Upload** — Each file is stored in **IndexedDB** by document id (`src/utils/docFileCache.js`) so PDF bytes survive reloads; `localStorage` only keeps metadata (PDFs do not store base64 `content` there).
+2. **Run analysis** — `Analysis.jsx` restores `File` objects from IndexedDB when needed, then `buildAnalysisWebhookPayload` sends ready PDFs as `{ name, type, file }` (no upstream `content`).
+3. **`runDiligenceWorkflow`** — Uses **pdf.js** to extract text from each `File`, then POSTs JSON `{ companyName, companyId, documents }` where each document has string `content` (plain text) for n8n. The pdf.js worker is loaded via Vite’s `?url` import (`pdf.worker.min.mjs`).
+4. **Polling** — The client polls Supabase (`dilligencetable`) for the completed `result` for that `companyId` / run id.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | ESLint |
+
+## Stack
+
+- React 19, React Router, Tailwind
+- `@supabase/supabase-js`, `pdfjs-dist`
+- Deploy-friendly static build (e.g. Vercel — see `vercel.json` if present)
+
+## License
+
+Private / see repository owner.

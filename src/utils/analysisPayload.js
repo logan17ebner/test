@@ -2,8 +2,8 @@
  * Large JSON bodies (e.g. base64 data URIs for PDFs) often trigger n8n or gateway
  * errors (500/413). Cap per-document and total content size for the webhook POST.
  */
-const MAX_CHARS_PER_DOCUMENT = 500_000;
-const MAX_TOTAL_CONTENT_CHARS = 1_500_000;
+const MAX_CHARS_PER_DOCUMENT = 25_000_000;
+const MAX_TOTAL_CONTENT_CHARS = 55_000_000;
 
 function truncateContent(content, docName, maxLen, reasonSuffix) {
   if (!content || content.length <= maxLen) return content;
@@ -24,36 +24,54 @@ export function buildAnalysisWebhookPayload(companyName, companyId, docs) {
   const documents = [];
 
   for (const d of ready) {
-    let content =
-      d.content || `[No content extracted for ${d.name}]`;
+    const isPdf =
+      (typeof d.name === 'string' && d.name.toLowerCase().endsWith('.pdf')) ||
+      String(d.type || '').toUpperCase() === 'PDF';
+    if (d.file instanceof File && isPdf) {
+      documents.push({
+        type: d.type,
+        name: d.name,
+        file: d.file,
+      });
+      continue;
+    }
 
-    content = truncateContent(
+    if (isPdf) {
+      continue;
+    }
+
+    const content = d.content;
+    if (content == null || content === '') {
+      continue;
+    }
+
+    let truncated = truncateContent(
       content,
       d.name,
       MAX_CHARS_PER_DOCUMENT,
       'Truncated — document exceeded per-file character limit for webhook'
     );
 
-    if (totalChars + content.length > MAX_TOTAL_CONTENT_CHARS) {
+    if (totalChars + truncated.length > MAX_TOTAL_CONTENT_CHARS) {
       const budget = Math.max(0, MAX_TOTAL_CONTENT_CHARS - totalChars);
       if (budget < 500) break;
-      content =
-        content.slice(0, budget) +
+      const capped =
+        truncated.slice(0, budget) +
         '\n\n[Truncated — total webhook payload size limit reached]';
       documents.push({
         type: d.type,
         name: d.name,
-        content,
+        content: capped,
         truncated: true,
       });
       break;
     }
 
-    totalChars += content.length;
+    totalChars += truncated.length;
     documents.push({
       type: d.type,
       name: d.name,
-      content,
+      content: truncated,
     });
   }
 

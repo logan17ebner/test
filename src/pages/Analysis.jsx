@@ -21,6 +21,7 @@ import {
   resolveAnalysisWebhookFetchUrl,
 } from '../utils/analysisWebhook';
 import { buildAnalysisWebhookPayload } from '../utils/analysisPayload';
+import { getCachedDocFile } from '../utils/docFileCache';
 import { runDiligenceWorkflow } from '../utils/runDiligenceWorkflow';
 import {
   addPendingReview,
@@ -150,10 +151,33 @@ export default function Analysis() {
     const submissionId = `sub_${Date.now()}`;
 
     try {
+      const docsForPayload = await Promise.all(
+        docs.map(async (d) => {
+          const isPdf =
+            (typeof d.name === 'string' && d.name.toLowerCase().endsWith('.pdf')) ||
+            String(d.type || '').toUpperCase() === 'PDF';
+          const base = isPdf
+            ? (() => {
+                const { content: _omit, ...rest } = d;
+                return rest;
+              })()
+            : d;
+
+          if (base.file instanceof File) return base;
+          if (!isPdf) return d;
+
+          const blob = await getCachedDocFile(d.id);
+          if (!blob) return base;
+          const file =
+            blob instanceof File ? blob : new File([blob], d.name, { type: 'application/pdf' });
+          return { ...base, file };
+        })
+      );
+
       const payload = buildAnalysisWebhookPayload(
         companyName,
         submissionId,
-        docs
+        docsForPayload
       );
 
       const prevCount = parseInt(localStorage.getItem('diligence_submission_count') || '0', 10);
@@ -188,24 +212,22 @@ export default function Analysis() {
       );
 
       const mapped = mapAuditToAnalysis(raw);
-      addPendingReview({
+      const approvedRecord = {
         submissionId,
         companyName: companyName.trim() || 'Unknown Company',
         analysis: mapped,
-      });
-      sessionStorage.setItem('dd_last_pending_submission', submissionId);
-      setAwaitingReview(true);
-      setLastResult({ success: true, status: 200, awaitingReview: true });
+        approvedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('dd_approved_analysis', JSON.stringify(approvedRecord));
+      window.dispatchEvent(new CustomEvent('dd-approved-analysis-updated'));
+      setLiveAnalysis(mapped);
+      setLastResult({ success: true, status: 200 });
       const siSubs = (() => {
-        try {
-          return JSON.parse(localStorage.getItem('diligence_submissions') || '[]');
-        } catch {
-          return [];
-        }
+        try { return JSON.parse(localStorage.getItem('diligence_submissions') || '[]'); }
+        catch { return []; }
       })();
-      localStorage.setItem(
-        'diligence_submissions',
-        JSON.stringify(siSubs.map((s) => (s.id === submissionId ? { ...s, status: 'awaiting_review' } : s)))
+      localStorage.setItem('diligence_submissions',
+        JSON.stringify(siSubs.map(s => s.id === submissionId ? { ...s, status: 'published' } : s))
       );
     } catch (err) {
       setLastResult({ success: false, error: err.message });
