@@ -10,7 +10,8 @@ import RedFlagsChart from '../components/RedFlagsChart';
 import KPITable from '../components/KPITable';
 import MissingDataProgress from '../components/MissingDataProgress';
 import ComparableCompanies from '../components/ComparableCompanies';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserFirstName } from '../utils/authUserDisplay';
 import { useDocuments } from '../context/DocumentsContext';
 import { getApprovedRecord } from '../utils/analysisReviewQueue';
 
@@ -50,7 +51,7 @@ export default function Dashboard() {
     return () => window.removeEventListener('dd-approved-analysis-updated', onUpdate);
   }, []);
 
-  const firstName = user?.name?.split(' ')[0] || 'there';
+  const firstName = getUserFirstName(user);
   const analysis = approvedRecord?.analysis ?? null;
   const companyName = approvedRecord?.companyName ?? '';
   const errorCount = docs.filter((d) => d.status === 'Error').length;

@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../lib/supabaseClient';
 import { resolveAnalysisWebhookFetchUrl } from './analysisWebhook';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
-
-const supabaseUrl = 'https://ohztnzrivotdueqafquw.supabase.co';
 
 const POLL_INTERVAL_MS = 3000;
 /** Default 10 minutes — multi-document n8n runs often exceed the previous 3-minute cap. */
@@ -35,12 +33,9 @@ async function extractPDFText(file) {
  * @returns {Promise<unknown>} Parsed `result` from the completed analyses row
  */
 export async function runDiligenceWorkflow(companyName, companyId, documents) {
-  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
-  if (!anon) {
-    throw new Error('VITE_SUPABASE_ANON_KEY is not configured.');
-  }
-
-  const supabase = createClient(supabaseUrl, anon);
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const user = authData?.user;
+  if (authError || !user) throw 'No authenticated user — cannot start diligence run.';
 
   const n8nWebhookUrl = resolveAnalysisWebhookFetchUrl(
     import.meta.env.VITE_N8N_WEBHOOK_URL?.trim() ?? ''
@@ -62,6 +57,7 @@ export async function runDiligenceWorkflow(companyName, companyId, documents) {
   );
 
   // 1. Fire and forget — webhook responds immediately
+  // n8n must read user_id from this payload and write it to the dilligencetable row so RLS allows the frontend poll to find it.
   const res = await fetch(n8nWebhookUrl, {
     method: 'POST',
     headers: {
@@ -69,7 +65,12 @@ export async function runDiligenceWorkflow(companyName, companyId, documents) {
       Accept: 'application/json, text/plain, */*',
       'ngrok-skip-browser-warning': 'true',
     },
-    body: JSON.stringify({ companyName, companyId, documents: enrichedDocuments }),
+    body: JSON.stringify({
+      companyName,
+      companyId,
+      documents: enrichedDocuments,
+      user_id: user.id,
+    }),
   });
 
   if (!res.ok) throw new Error(`Webhook error: ${res.status}`);

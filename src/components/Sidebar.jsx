@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -12,7 +11,8 @@ import {
   ChevronRight,
   KeyRound,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserDisplayName } from '../utils/authUserDisplay';
 import { mockWorkspace } from '../data/mockData';
 
 const navItems = [
@@ -23,11 +23,11 @@ const navItems = [
 ];
 
 export default function Sidebar({ mobileOpen, setMobileOpen }) {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
@@ -103,11 +103,13 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1">
           <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
             <span className="text-blue-400 text-xs font-semibold">
-              {user?.name?.charAt(0) ?? 'U'}
+              {(getUserDisplayName(user) || user?.email || 'U').charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-slate-200 text-xs font-medium truncate">{user?.name}</p>
+            <p className="text-slate-200 text-xs font-medium truncate">
+              {getUserDisplayName(user) || user?.email || 'User'}
+            </p>
             <p className="text-slate-500 text-xs truncate">{user?.email}</p>
           </div>
         </div>

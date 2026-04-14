@@ -1,18 +1,15 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function Login() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
-
+export default function LoginScreen() {
+  const { signIn, signUp } = useAuth();
+  const [mode, setMode] = useState('signin');
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -21,22 +18,31 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 600));
-    const result = login(form.email, form.password);
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      navigate(from, { replace: true });
+    setSubmitting(true);
+    setError('');
+    try {
+      if (mode === 'signin') {
+        const { error: err } = await signIn(form.email, form.password);
+        if (err) setError(err.message);
+      } else {
+        const { error: err } = await signUp(form.email, form.password);
+        if (err) setError(err.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const title = mode === 'signin' ? 'Welcome back' : 'Create your account';
+  const subtitle =
+    mode === 'signin' ? 'Sign in to your workspace' : 'Start your first due diligence review';
+  const submitLabel = mode === 'signin' ? 'Sign in' : 'Create account';
 
   return (
     <div className="min-h-screen bg-[#0F172A] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 justify-center mb-8">
           <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center">
             <ShieldCheck size={18} className="text-white" />
@@ -44,10 +50,40 @@ export default function Login() {
           <span className="text-white font-bold text-xl">DiligenceAI</span>
         </Link>
 
-        {/* Card */}
         <div className="bg-[#1E293B] border border-slate-700/50 rounded-2xl p-8 shadow-xl">
-          <h1 className="text-white font-bold text-2xl mb-1 tracking-tight">Welcome back</h1>
-          <p className="text-slate-400 text-sm mb-7">Sign in to your workspace</p>
+          <div className="flex rounded-xl bg-[#0F172A] p-1 mb-7">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin');
+                setError('');
+              }}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                mode === 'signin'
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setError('');
+              }}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                mode === 'signup'
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Sign up
+            </button>
+          </div>
+
+          <h1 className="text-white font-bold text-2xl mb-1 tracking-tight">{title}</h1>
+          <p className="text-slate-400 text-sm mb-7">{subtitle}</p>
 
           {error && (
             <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 mb-5">
@@ -58,11 +94,11 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-1.5" htmlFor="email">
+              <label className="block text-slate-300 text-sm font-medium mb-1.5" htmlFor="auth-email">
                 Email address
               </label>
               <input
-                id="email"
+                id="auth-email"
                 name="email"
                 type="email"
                 autoComplete="email"
@@ -75,23 +111,15 @@ export default function Login() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-slate-300 text-sm font-medium" htmlFor="password">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <label className="block text-slate-300 text-sm font-medium mb-1.5" htmlFor="auth-password">
+                Password
+              </label>
               <div className="relative">
                 <input
-                  id="password"
+                  id="auth-password"
                   name="password"
                   type={showPass ? 'text' : 'password'}
-                  autoComplete="current-password"
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                   required
                   value={form.password}
                   onChange={handleChange}
@@ -111,38 +139,24 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white font-semibold py-3 rounded-xl transition-colors text-sm mt-1 flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {submitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in…
+                  {mode === 'signin' ? 'Signing in…' : 'Creating account…'}
                 </>
               ) : (
-                'Sign in'
+                submitLabel
               )}
             </button>
           </form>
-
-          <div className="mt-4 text-center">
-            <p className="text-slate-500 text-sm">
-              <span className="text-slate-600">Try: </span>
-              <button
-                type="button"
-                onClick={() => setForm({ email: 'analyst@venturefirm.com', password: 'demo1234' })}
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
-              >
-                Use demo credentials
-              </button>
-            </p>
-          </div>
         </div>
 
         <p className="text-center text-slate-500 text-sm mt-5">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-            Create workspace
+          <Link to="/" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+            ← Back to home
           </Link>
         </p>
 

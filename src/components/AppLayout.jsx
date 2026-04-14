@@ -1,8 +1,15 @@
 import { useState } from 'react';
+import { ShieldCheck, LogOut } from 'lucide-react';
 import Sidebar, { MobileMenuButton } from './Sidebar';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AppLayout({ children, title, actions }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { session, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -13,15 +20,33 @@ export default function AppLayout({ children, title, actions }) {
         {/* Top bar */}
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <MobileMenuButton onClick={() => setMobileOpen(true)} />
+              <div className="hidden sm:flex items-center gap-2 pr-3 border-r border-slate-200 flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <ShieldCheck size={16} className="text-white" />
+                </div>
+                <span className="text-slate-900 font-semibold text-sm">DiligenceAI</span>
+              </div>
               {title && (
-                <h1 className="text-slate-900 font-semibold text-base sm:text-lg leading-tight">
+                <h1 className="text-slate-900 font-semibold text-base sm:text-lg leading-tight truncate">
                   {title}
                 </h1>
               )}
             </div>
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {session && (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                >
+                  <LogOut size={15} />
+                  <span className="hidden sm:inline">Sign out</span>
+                </button>
+              )}
+              {actions && <div className="flex items-center gap-2">{actions}</div>}
+            </div>
           </div>
         </header>
 

@@ -83,13 +83,13 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              to="/login"
+              to="/dashboard"
               className="text-slate-300 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-slate-700/50 transition-colors"
             >
               Sign in
             </Link>
             <Link
-              to="/signup"
+              to="/dashboard"
               className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
               Get Started
@@ -121,14 +121,14 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/signup"
+              to="/dashboard"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-base shadow-lg shadow-blue-500/25"
             >
               Get Started Free
               <ArrowRight size={17} />
             </Link>
             <Link
-              to="/login"
+              to="/dashboard"
               className="w-full sm:w-auto flex items-center justify-center gap-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-medium px-6 py-3.5 rounded-xl transition-colors text-base"
             >
               Request Demo
@@ -271,14 +271,14 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/signup"
+              to="/dashboard"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-7 py-3.5 rounded-xl transition-colors text-base shadow-lg shadow-blue-500/25"
             >
               Get Started Free
               <ArrowRight size={17} />
             </Link>
             <Link
-              to="/login"
+              to="/dashboard"
               className="w-full sm:w-auto text-slate-400 hover:text-slate-200 font-medium px-4 py-3.5 text-base transition-colors"
             >
               Already have an account? Sign in →

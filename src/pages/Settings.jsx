@@ -11,7 +11,8 @@ import {
   FileText,
 } from 'lucide-react';
 import AppLayout from '../components/AppLayout';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserDisplayName } from '../utils/authUserDisplay';
 import { useDocuments } from '../context/DocumentsContext';
 import { mockWorkspace } from '../data/mockData';
 import { useNavigate } from 'react-router-dom';
@@ -95,16 +96,16 @@ function InfoField({ label, value }) {
 }
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { docs, clearAllDocuments } = useDocuments();
 
   const [showClearDocs, setShowClearDocs] = useState(false);
   const [showDeleteWorkspace, setShowDeleteWorkspace] = useState(false);
 
-  const handleDeleteWorkspace = () => {
+  const handleDeleteWorkspace = async () => {
     clearAllDocuments();
-    logout();
+    await signOut();
     navigate('/');
   };
 
@@ -131,9 +132,9 @@ export default function Settings() {
 
         {/* Account */}
         <Section title="Account" icon={User}>
-          <InfoField label="Name" value={user?.name || 'Analyst'} />
+          <InfoField label="Name" value={getUserDisplayName(user) || '—'} />
           <InfoField label="Email" value={user?.email || ''} />
-          <InfoField label="Role" value={user?.role || 'Analyst'} />
+          <InfoField label="Role" value={user?.role ?? 'Member'} />
         </Section>
 
         {/* Data retention */}
