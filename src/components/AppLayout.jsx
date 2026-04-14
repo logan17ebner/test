@@ -35,7 +35,7 @@ export default function AppLayout({ children, title, actions }) {
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {session && (
+              {session?.user && (
                 <button
                   type="button"
                   onClick={handleSignOut}

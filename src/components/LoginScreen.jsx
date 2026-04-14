@@ -9,24 +9,37 @@ export default function LoginScreen() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
     setError('');
+    setInfo('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
+    setInfo('');
     try {
       if (mode === 'signin') {
-        const { error: err } = await signIn(form.email, form.password);
-        if (err) setError(err.message);
+        const { data, error: err } = await signIn(form.email, form.password);
+        if (err) {
+          setError(err.message);
+        } else if (!data?.session?.user) {
+          setError('Sign-in did not return a session. Check your email and password, or confirm your email if required.');
+        }
       } else {
-        const { error: err } = await signUp(form.email, form.password);
-        if (err) setError(err.message);
+        const { data, error: err } = await signUp(form.email, form.password);
+        if (err) {
+          setError(err.message);
+        } else if (data?.user && !data?.session) {
+          setInfo('Check your inbox to confirm your email, then sign in.');
+        } else if (!data?.session?.user) {
+          setError('Sign-up did not complete. Try again or contact support.');
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -57,6 +70,7 @@ export default function LoginScreen() {
               onClick={() => {
                 setMode('signin');
                 setError('');
+                setInfo('');
               }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
                 mode === 'signin'
@@ -71,6 +85,7 @@ export default function LoginScreen() {
               onClick={() => {
                 setMode('signup');
                 setError('');
+                setInfo('');
               }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
                 mode === 'signup'
@@ -89,6 +104,13 @@ export default function LoginScreen() {
             <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 mb-5">
               <AlertCircle size={15} className="text-red-400 flex-shrink-0" />
               <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {info && (
+            <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/25 rounded-xl px-4 py-3 mb-5">
+              <AlertCircle size={15} className="text-blue-300 flex-shrink-0" />
+              <p className="text-blue-200 text-sm">{info}</p>
             </div>
           )}
 

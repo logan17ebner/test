@@ -16,7 +16,7 @@ export default function AuthGate() {
     );
   }
 
-  if (!session) {
+  if (!session?.user) {
     return <LoginScreen />;
   }
 

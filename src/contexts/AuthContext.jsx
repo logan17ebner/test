@@ -10,17 +10,23 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
+    const markReady = () => {
+      if (!cancelled) setLoading(false);
+    };
+
     supabase.auth.getSession().then(({ data: { session: initial }, error }) => {
       if (cancelled) return;
       if (error) console.error(error);
       setSession(initial ?? null);
-      setLoading(false);
+      markReady();
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (cancelled) return;
       setSession(nextSession ?? null);
+      markReady();
     });
 
     return () => {

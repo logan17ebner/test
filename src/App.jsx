@@ -18,10 +18,10 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
 
           <Route element={<AuthGate />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/documents" element={<Documents />} />
-            <Route path="/analysis" element={<Analysis />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="documents" element={<Documents />} />
+            <Route path="analysis" element={<Analysis />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           <Route path="/login" element={<Navigate to="/dashboard" replace />} />
