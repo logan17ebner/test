@@ -25,7 +25,7 @@ export default function DiligenceScoreHero({ companyName, recommendation, dilige
   }, [diligenceScore]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl px-6 py-6 flex flex-col sm:flex-row sm:items-center gap-5">
+    <div className="bg-blue-50 border border-slate-300 rounded-sm px-6 py-6 flex flex-col sm:flex-row sm:items-center gap-5 shadow-sm">
       <div className="flex-1 min-w-0">
         <p className="text-slate-400 text-xs font-medium uppercase tracking-widest mb-1">Company Under Review</p>
         <h2 className="text-slate-900 font-bold text-2xl truncate">{companyName || 'Unknown Company'}</h2>

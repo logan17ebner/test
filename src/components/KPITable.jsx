@@ -20,7 +20,7 @@ export default function KPITable({ kpis }) {
   if (!kpis || kpis.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 text-slate-400 text-sm text-center px-4">
-        KPI data will appear here after analysis runs. Ensure your n8n workflow outputs a <code className="mx-1 px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 text-xs">kpis</code> or <code className="mx-1 px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 text-xs">metrics</code> array.
+        KPI data will appear here after analysis runs. Ensure your n8n workflow outputs a <code className="mx-1 px-1.5 py-0.5 bg-blue-100/40 rounded-sm text-slate-600 text-xs">kpis</code> or <code className="mx-1 px-1.5 py-0.5 bg-blue-100/40 rounded-sm text-slate-600 text-xs">metrics</code> array.
       </div>
     );
   }
@@ -50,7 +50,7 @@ export default function KPITable({ kpis }) {
     <div className="overflow-x-auto -mx-5 px-5">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-100">
+          <tr className="border-b border-slate-300">
             {cols.map((c) => (
               <th
                 key={c.key}
@@ -62,9 +62,9 @@ export default function KPITable({ kpis }) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-slate-200">
           {sorted.map((kpi) => (
-            <tr key={kpi.id} className="hover:bg-slate-50 transition-colors">
+            <tr key={kpi.id} className="hover:bg-blue-100/50 transition-colors">
               <td className="py-2.5 pr-4 text-slate-700 font-medium">{kpi.metric}</td>
               <td className="py-2.5 pr-4 font-mono-data text-slate-800">{kpi.value}</td>
               <td className="py-2.5"><ConfidencePill score={kpi.confidenceScore} /></td>

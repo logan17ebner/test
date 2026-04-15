@@ -53,7 +53,7 @@ function RunResultBanner({ result, onDismiss }) {
   const awaiting = ok && result.awaitingReview;
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
+      className={`flex items-start gap-3 rounded-sm px-4 py-3 border ${
         ok ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
       }`}
     >
@@ -270,7 +270,7 @@ export default function Analysis() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {newerPendingCount > 0 && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-sm px-4 py-3">
             <InfoCircledIcon width={16} height={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-amber-900 text-sm flex-1">
               You have {newerPendingCount} newer analysis run
@@ -282,7 +282,7 @@ export default function Analysis() {
 
         {/* ENV error banner */}
         {envError && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-sm px-4 py-3">
             <InfoCircledIcon width={16} height={16} className="text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-red-700 text-sm flex-1">{envError}</p>
             <button
@@ -295,7 +295,7 @@ export default function Analysis() {
         )}
 
         {/* Run panel */}
-        <div className="bg-[#0F172A] border border-slate-700/50 rounded-2xl p-6">
+        <div className="bg-[#0F172A] border border-slate-700/50 rounded-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 min-w-0">
               <h2 className="text-white font-bold text-lg mb-1">Trigger Analysis</h2>
@@ -310,7 +310,7 @@ export default function Analysis() {
             <button
               onClick={runAnalysis}
               disabled={loading || !hasWebhook || eligibleDocs.length === 0}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20 flex-shrink-0"
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-sm text-sm transition-colors shadow-lg shadow-blue-500/20 flex-shrink-0"
             >
               {loading ? (
                 <>
@@ -333,7 +333,7 @@ export default function Analysis() {
               placeholder="Company name (e.g. Acme Corp)"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-500 text-sm rounded-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -348,8 +348,8 @@ export default function Analysis() {
           )}
 
           {/* Document checklist */}
-          <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="mt-4 bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300">
               <h3 className="text-slate-800 font-semibold text-sm">Documents in Workspace</h3>
               <Link
                 to="/documents"
@@ -361,7 +361,7 @@ export default function Analysis() {
 
             {docs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center mb-3">
+                <div className="w-10 h-10 bg-blue-100/40 rounded-sm flex items-center justify-center mb-3">
                   <BarChartIcon width={18} height={18} className="text-slate-300" />
                 </div>
                 <p className="text-slate-500 text-sm font-medium mb-1">No documents uploaded</p>
@@ -370,13 +370,13 @@ export default function Analysis() {
                 </p>
                 <Link
                   to="/documents"
-                  className="mt-4 inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                  className="mt-4 inline-flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-sm transition-colors"
                 >
                   Go to Documents
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-200">
                 {docs.map((doc) => {
                   const eligible = doc.status === 'Ready';
                   const statusColor =
@@ -394,7 +394,7 @@ export default function Analysis() {
                       }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                        className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${
                           eligible ? 'bg-blue-500 border-blue-500' : 'border-slate-300'
                         }`}
                       >
@@ -414,7 +414,7 @@ export default function Analysis() {
           </div>
 
           {/* Help text */}
-          <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-5 py-4">
+          <div className="mt-4 bg-blue-50 border border-blue-100 rounded-sm px-5 py-4">
             <p className="text-blue-700 text-sm leading-relaxed">
               <span className="font-semibold">How it works:</span> Run Analysis sends your ready
               documents for processing. An administrator reviews the output before it is published
@@ -425,10 +425,10 @@ export default function Analysis() {
 
         {/* PDF export — shown after a successful run populated liveAnalysis */}
         {liveAnalysis && (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 border-b border-slate-100">
+          <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 border-b border-slate-300">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-sm bg-blue-100/40 flex items-center justify-center flex-shrink-0">
                   <FileTextIcon width={18} height={18} className="text-slate-600" />
                 </div>
                 <div>
@@ -448,7 +448,7 @@ export default function Analysis() {
                     analysis: liveAnalysis,
                   });
                 }}
-                className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex-shrink-0"
+                className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-sm transition-colors flex-shrink-0"
               >
                 <DownloadIcon width={16} height={16} />
                 Download PDF
@@ -460,14 +460,14 @@ export default function Analysis() {
         {/* ── Analysis Results ─────────────────────────────────────────────── */}
 
         {/* Executive Summary */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300">
             <div className="flex items-center gap-2">
               <FileTextIcon width={15} height={15} className="text-slate-500" />
               <h3 className="text-slate-800 font-semibold text-sm">Executive Summary</h3>
             </div>
             {displayAnalysis.executiveSummary.confidence > 0 && (
-              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-slate-500 bg-blue-100/40 px-2 py-0.5 rounded-full">
                 Confidence: {displayAnalysis.executiveSummary.confidence}%
               </span>
             )}
@@ -481,8 +481,8 @@ export default function Analysis() {
 
         {/* Red Flags — only rendered when there are findings */}
         {displayAnalysis.redFlags.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+          <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-300">
               <DrawingPinIcon width={15} height={15} className="text-red-500" />
               <h3 className="text-slate-800 font-semibold text-sm">
                 Red Flags{' '}
@@ -491,7 +491,7 @@ export default function Analysis() {
                 </span>
               </h3>
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-200">
               {displayAnalysis.redFlags.map((flag) => (
                 <div key={flag.id} className="px-5 py-4">
                   <div className="flex items-start gap-3">
@@ -523,8 +523,8 @@ export default function Analysis() {
 
         {/* Missing Data — only rendered when there are flags */}
         {displayAnalysis.missingData.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+          <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-300">
               <ClipboardIcon width={15} height={15} className="text-amber-500" />
               <h3 className="text-slate-800 font-semibold text-sm">
                 Missing Data{' '}
@@ -533,11 +533,11 @@ export default function Analysis() {
                 </span>
               </h3>
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-200">
               {displayAnalysis.missingData.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                    className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${
                       item.checked ? 'bg-green-500 border-green-500' : 'border-slate-300'
                     }`}
                   >

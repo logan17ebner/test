@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircledIcon, ExitIcon } from '@radix-ui/react-icons';
 import Sidebar, { MobileMenuButton } from './Sidebar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function AppLayout({ children, title, actions }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -18,12 +18,12 @@ export default function AppLayout({ children, title, actions }) {
       {/* Main content */}
       <div className="lg:pl-60 min-h-screen flex flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 py-4">
+        <header className="sticky top-0 z-20 bg-blue-50/80 backdrop-blur-sm border-b border-slate-300 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <MobileMenuButton onClick={() => setMobileOpen(true)} />
-              <div className="hidden sm:flex items-center gap-2 pr-3 border-r border-slate-200 flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <div className="hidden sm:flex items-center gap-2 pr-3 border-r border-slate-300 flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-500 rounded-sm flex items-center justify-center">
                   <CheckCircledIcon width={16} height={16} className="text-white" />
                 </div>
                 <span className="text-slate-900 font-semibold text-sm">DiligenceAI</span>
@@ -39,7 +39,7 @@ export default function AppLayout({ children, title, actions }) {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium px-3 py-2 rounded-sm border border-slate-300 hover:bg-blue-100/50 transition-colors"
                 >
                   <ExitIcon width={15} height={15} />
                   <span className="hidden sm:inline">Sign out</span>

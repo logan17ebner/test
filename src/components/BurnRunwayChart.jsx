@@ -33,14 +33,14 @@ export default function BurnRunwayChart({ financials }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-50/80 border border-slate-100 rounded-xl px-4 py-3">
+        <div className="bg-blue-100/40 border border-slate-300 rounded-sm px-4 py-3 shadow-sm">
           <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wide mb-1">Runway</p>
           <p className="font-mono-data text-2xl font-bold text-slate-900 leading-tight">
             {runwayMonths > 0 ? `${runwayMonths}` : '—'}
             {runwayMonths > 0 && <span className="text-slate-500 text-sm font-semibold ml-1">mo</span>}
           </p>
         </div>
-        <div className="bg-slate-50/80 border border-slate-100 rounded-xl px-4 py-3">
+        <div className="bg-blue-100/40 border border-slate-300 rounded-sm px-4 py-3 shadow-sm">
           <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wide mb-1">Monthly Burn</p>
           <p className="font-mono-data text-2xl font-bold text-slate-900 leading-tight">
             {latest && latest.burn > 0 ? formatMoneyCompact(latest.burn) : '—'}
@@ -59,7 +59,7 @@ export default function BurnRunwayChart({ financials }) {
           showLegend
         />
       ) : (
-        <div className="flex items-center justify-center h-40 text-slate-400 text-sm text-center px-4 border border-dashed border-slate-200 rounded-xl">
+        <div className="flex items-center justify-center h-40 text-slate-400 text-sm text-center px-4 border border-dashed border-slate-300 rounded-sm">
           Monthly burn and cash balance series will chart here once <span className="font-mono-data text-xs mx-1">financials.burnHistory</span> is present.
         </div>
       )}

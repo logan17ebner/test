@@ -62,7 +62,7 @@ export default function MissingDataProgress({ missingData }) {
             <label key={item.id} className="flex items-start gap-2.5 cursor-pointer group">
               <div
                 onClick={() => setLocalChecked((prev) => ({ ...prev, [item.id]: !checked }))}
-                className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                className={`mt-0.5 w-4 h-4 rounded-sm border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
                   checked ? 'bg-blue-500 border-blue-500' : 'border-slate-300 group-hover:border-blue-400'
                 }`}
               >
@@ -71,7 +71,7 @@ export default function MissingDataProgress({ missingData }) {
               <span className={`text-xs leading-relaxed flex-1 ${checked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
                 {item.item}
               </span>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border flex-shrink-0 mt-0.5 ${p.bg} ${p.text} ${p.border}`}>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-sm border flex-shrink-0 mt-0.5 ${p.bg} ${p.text} ${p.border}`}>
                 {item.priority}
               </span>
             </label>

@@ -64,17 +64,17 @@ function ConfirmModal({ file, onConfirm, onCancel }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-blue-50 rounded-sm shadow-2xl w-full max-w-md border border-slate-300 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-300">
           <h2 className="text-slate-900 font-semibold text-base">Confirm upload</h2>
-          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-sm transition-colors">
             <Cross2Icon width={16} height={16} />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {/* File info */}
-          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-blue-100/40 border border-slate-300 rounded-sm px-4 py-3">
             <FileTextIcon width={18} height={18} className="text-blue-500 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-slate-800 text-sm font-medium truncate">{file.name}</p>
@@ -87,7 +87,7 @@ function ConfirmModal({ file, onConfirm, onCancel }) {
           {/* Consent checkbox */}
           <label className="flex items-start gap-3 cursor-pointer group">
             <div
-              className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center border-2 flex-shrink-0 transition-colors ${
+              className={`mt-0.5 w-4 h-4 rounded-sm flex items-center justify-center border-2 flex-shrink-0 transition-colors ${
                 checked ? 'bg-blue-500 border-blue-500' : 'border-slate-300 group-hover:border-blue-400'
               }`}
               onClick={() => setChecked((v) => !v)}
@@ -103,17 +103,17 @@ function ConfirmModal({ file, onConfirm, onCancel }) {
           </label>
         </div>
 
-        <div className="flex gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+        <div className="flex gap-3 px-6 py-4 bg-blue-100/40 border-t border-slate-300">
           <button
             onClick={onCancel}
-            className="flex-1 border border-slate-200 text-slate-600 hover:bg-white font-medium py-2.5 rounded-xl text-sm transition-colors"
+            className="flex-1 border border-slate-200 text-slate-600 hover:bg-white font-medium py-2.5 rounded-sm text-sm transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={() => checked && onConfirm()}
             disabled={!checked}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+            className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 rounded-sm text-sm transition-colors"
           >
             Upload document
           </button>
@@ -126,10 +126,10 @@ function ConfirmModal({ file, onConfirm, onCancel }) {
 function DeleteModal({ doc, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-blue-50 rounded-sm shadow-2xl w-full max-w-sm border border-slate-300 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-300">
           <h2 className="text-slate-900 font-semibold text-base">Delete document</h2>
-          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-sm">
             <Cross2Icon width={16} height={16} />
           </button>
         </div>
@@ -139,11 +139,11 @@ function DeleteModal({ doc, onConfirm, onCancel }) {
             <span className="font-semibold text-slate-800">"{doc.name}"</span>? This removes it from the workspace only — it cannot be undone.
           </p>
         </div>
-        <div className="flex gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-          <button onClick={onCancel} className="flex-1 border border-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-white transition-colors">
+        <div className="flex gap-3 px-6 py-4 bg-blue-100/40 border-t border-slate-300">
+          <button onClick={onCancel} className="flex-1 border border-slate-200 text-slate-600 font-medium py-2.5 rounded-sm text-sm hover:bg-white transition-colors">
             Cancel
           </button>
-          <button onClick={onConfirm} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+          <button onClick={onConfirm} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-sm text-sm transition-colors">
             Delete
           </button>
         </div>
@@ -226,7 +226,7 @@ export default function Documents() {
       <div className="max-w-5xl mx-auto space-y-5">
 
         {uploadError && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-sm px-4 py-3">
             <InfoCircledIcon width={15} height={15} className="text-red-500 flex-shrink-0" />
             <p className="text-red-700 text-sm flex-1">{uploadError}</p>
             <button onClick={() => setUploadError('')} className="text-red-400 hover:text-red-600">
@@ -241,10 +241,10 @@ export default function Documents() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl px-6 py-12 text-center cursor-pointer transition-colors ${
+          className={`relative border-2 border-dashed rounded-sm px-6 py-12 text-center cursor-pointer transition-colors shadow-sm ${
             isDragging
               ? 'border-blue-400 bg-blue-50'
-              : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'
+              : 'border-slate-300 bg-blue-50 hover:border-blue-300 hover:bg-blue-50/30'
           }`}
         >
           <input
@@ -254,7 +254,7 @@ export default function Documents() {
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
-          <div className={`w-12 h-12 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${isDragging ? 'bg-blue-100' : 'bg-slate-100'}`}>
+          <div className={`w-12 h-12 mx-auto rounded-sm flex items-center justify-center mb-4 transition-colors ${isDragging ? 'bg-blue-100' : 'bg-blue-100/40'}`}>
             <UploadIcon width={22} height={22} className={isDragging ? 'text-blue-500' : 'text-slate-400'} />
           </div>
           <p className="text-slate-700 font-semibold text-base mb-1">
@@ -264,18 +264,18 @@ export default function Documents() {
         </div>
 
         {/* Document library */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300">
             <div className="flex items-center gap-2">
               <FileTextIcon width={16} height={16} className="text-slate-500" />
               <h3 className="text-slate-800 font-semibold text-sm">Document Library</h3>
-              <span className="text-slate-400 text-xs bg-slate-100 px-2 py-0.5 rounded-full">{docs.length}</span>
+              <span className="text-slate-400 text-xs bg-blue-100/40 px-2 py-0.5 rounded-full">{docs.length}</span>
             </div>
           </div>
 
           {docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <div className="w-14 h-14 bg-blue-100/40 rounded-sm flex items-center justify-center mb-4">
                 <FilePlusIcon width={26} height={26} className="text-slate-300" />
               </div>
               <h3 className="text-slate-700 font-semibold text-base mb-2">No documents yet</h3>
@@ -284,7 +284,7 @@ export default function Documents() {
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-5 inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                className="mt-5 inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-sm transition-colors"
               >
                 <UploadIcon width={15} height={15} />
                 Upload first document
@@ -293,7 +293,7 @@ export default function Documents() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-blue-100/40 border-b border-slate-300">
                   <tr>
                     {columns.map((col) => (
                       <th
@@ -310,14 +310,14 @@ export default function Documents() {
                     <th className="px-5 py-3 text-slate-500 font-medium text-xs text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-200">
                   {sortedDocs.map((doc) => {
                     const Icon = FILE_ICONS[doc.type] || FileTextIcon;
                     const s = STATUS_CONFIG[doc.status] || STATUS_CONFIG.Processing;
                     const StatusIcon = s.icon;
                     const isSpinning = doc.status === 'Uploading';
                     return (
-                      <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={doc.id} className="hover:bg-blue-100/50 transition-colors">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
                             <Icon width={15} height={15} className="text-blue-400 flex-shrink-0" />
@@ -326,7 +326,7 @@ export default function Documents() {
                         </td>
                         <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">{formatDate(doc.uploadedAt)}</td>
                         <td className="px-5 py-3.5">
-                          <span className="text-slate-500 text-xs bg-slate-100 px-2 py-0.5 rounded-md font-mono">{doc.type}</span>
+                          <span className="text-slate-500 text-xs bg-blue-100/40 px-2 py-0.5 rounded-sm font-mono">{doc.type}</span>
                         </td>
                         <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">{doc.size}</td>
                         <td className="px-5 py-3.5">
@@ -339,7 +339,7 @@ export default function Documents() {
                           <button
                             onClick={() => setDeleteTarget(doc)}
                             disabled={doc.status === 'Uploading'}
-                            className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Delete"
                           >
                             <TrashIcon width={14} height={14} />

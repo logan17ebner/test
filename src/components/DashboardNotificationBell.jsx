@@ -30,7 +30,7 @@ export default function DashboardNotificationBell({ errorCount = 0 }) {
     <Menu as="div" className="relative">
       <MenuButton
         type="button"
-        className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+        className="relative p-2 rounded-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
         aria-label="Notifications"
       >
         <BellIcon width={20} height={20} />
@@ -42,9 +42,9 @@ export default function DashboardNotificationBell({ errorCount = 0 }) {
       <MenuItems
         transition
         anchor="bottom end"
-        className="z-50 mt-2 w-[min(100vw-2rem,22rem)] origin-top-right rounded-2xl border border-slate-200 bg-white py-2 shadow-xl focus:outline-none data-closed:scale-95 data-closed:opacity-0"
+        className="z-50 mt-2 w-[min(100vw-2rem,22rem)] origin-top-right rounded-sm border border-slate-300 bg-blue-50 py-2 shadow-xl focus:outline-none data-closed:scale-95 data-closed:opacity-0"
       >
-        <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-300">
           <p className="text-slate-800 text-sm font-semibold">Notifications</p>
           {list.some((n) => !n.read) && (
             <button
@@ -58,7 +58,7 @@ export default function DashboardNotificationBell({ errorCount = 0 }) {
         </div>
 
         {errorCount > 0 && (
-          <div className="mx-2 mt-2 rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-800">
+          <div className="mx-2 mt-2 rounded-sm bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-800">
             {errorCount} document{errorCount !== 1 ? 's have' : ' has'} an error —{' '}
             <Link to="/documents" className="font-semibold underline">
               Review documents
@@ -74,8 +74,8 @@ export default function DashboardNotificationBell({ errorCount = 0 }) {
               <MenuItem key={n.id}>
                 {({ focus }) => (
                   <div
-                    className={`px-4 py-2.5 border-b border-slate-50 last:border-0 ${
-                      focus ? 'bg-slate-50' : ''
+                    className={`px-4 py-2.5 border-b border-slate-200 last:border-0 ${
+                      focus ? 'bg-blue-100/50' : ''
                     } ${!n.read ? 'bg-blue-50/40' : ''}`}
                   >
                     {n.href ? (

@@ -37,14 +37,14 @@ export default function RedFlagsChart({ redFlags }) {
 
       <div className="space-y-1.5">
         {topFlags.map((flag) => (
-          <div key={flag.id} className="border border-slate-100 rounded-xl overflow-hidden">
+          <div key={flag.id} className="border border-slate-300 rounded-sm overflow-hidden">
             <button
               type="button"
               onClick={() => setExpanded(expanded === flag.id ? null : flag.id)}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-blue-100/50 transition-colors"
             >
               <span
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0"
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-sm flex-shrink-0"
                 style={{ background: `${SEV_COLOR[flag.severity]}18`, color: SEV_COLOR[flag.severity] }}
               >
                 {flag.severity}

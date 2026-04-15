@@ -11,7 +11,7 @@ import {
   FileTextIcon,
 } from '@radix-ui/react-icons';
 import AppLayout from '../components/AppLayout';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { getUserDisplayName } from '../utils/authUserDisplay';
 import { useDocuments } from '../context/DocumentsContext';
 import { mockWorkspace } from '../data/mockData';
@@ -23,15 +23,15 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-blue-50 rounded-sm shadow-2xl w-full max-w-sm border border-slate-300 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-300">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-red-50 border border-red-100 rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-red-50 border border-red-100 rounded-sm flex items-center justify-center">
               <ExclamationTriangleIcon width={14} height={14} className="text-red-500" />
             </div>
             <h2 className="text-slate-900 font-semibold text-base">{title}</h2>
           </div>
-          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+          <button onClick={onCancel} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-sm">
             <Cross2Icon width={16} height={16} />
           </button>
         </div>
@@ -47,19 +47,19 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 placeholder={requireTyped}
-                className="w-full border border-slate-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none transition-colors focus:ring-2 focus:ring-red-400/20"
+                className="w-full border border-slate-200 focus:border-red-400 rounded-sm px-4 py-2.5 text-sm text-slate-800 outline-none transition-colors focus:ring-2 focus:ring-red-400/20"
               />
             </div>
           )}
         </div>
-        <div className="flex gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-          <button onClick={onCancel} className="flex-1 border border-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-white transition-colors">
+        <div className="flex gap-3 px-6 py-4 bg-blue-100/40 border-t border-slate-300">
+          <button onClick={onCancel} className="flex-1 border border-slate-200 text-slate-600 font-medium py-2.5 rounded-sm text-sm hover:bg-white transition-colors">
             Cancel
           </button>
           <button
             onClick={() => isReady && onConfirm()}
             disabled={!isReady}
-            className={`flex-1 font-semibold py-2.5 rounded-xl text-sm transition-colors ${confirmClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+            className={`flex-1 font-semibold py-2.5 rounded-sm text-sm transition-colors ${confirmClass} disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {confirmLabel}
           </button>
@@ -71,8 +71,8 @@ function ConfirmDialog({ title, message, confirmLabel, confirmClass, onConfirm, 
 
 function Section({ title, icon: Icon, description, children }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100">
+    <div className="bg-blue-50 border border-slate-300 rounded-sm overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-slate-300">
         <div className="flex items-center gap-2.5">
           <Icon width={16} height={16} className="text-slate-500" />
           <div>
@@ -88,7 +88,7 @@ function Section({ title, icon: Icon, description, children }) {
 
 function InfoField({ label, value }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-50 last:border-0">
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-200 last:border-0">
       <p className="text-slate-500 text-xs mt-0.5 w-32 flex-shrink-0">{label}</p>
       <p className="text-slate-800 text-sm font-medium text-right">{value}</p>
     </div>
@@ -163,13 +163,13 @@ export default function Settings() {
         </Section>
 
         {/* Danger zone */}
-        <div className="bg-white border border-red-200 rounded-2xl overflow-hidden">
+        <div className="bg-blue-50 border border-red-200 rounded-sm overflow-hidden shadow-sm">
           <div className="flex items-center gap-2.5 px-5 py-4 border-b border-red-100 bg-red-50/50">
             <ExclamationTriangleIcon width={16} height={16} className="text-red-500" />
             <h3 className="text-red-800 font-semibold text-sm">Danger Zone</h3>
           </div>
           <div className="px-5 py-5 space-y-4">
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-300">
               <div>
                 <p className="text-slate-800 text-sm font-semibold mb-0.5">Clear all documents</p>
                 <p className="text-slate-500 text-xs leading-relaxed">
@@ -179,7 +179,7 @@ export default function Settings() {
               <button
                 onClick={() => setShowClearDocs(true)}
                 disabled={docs.length === 0}
-                className="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-3.5 py-2 rounded-xl transition-colors flex-shrink-0"
+                className="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-3.5 py-2 rounded-sm transition-colors flex-shrink-0"
               >
                 <TrashIcon width={14} height={14} />
                 Clear
@@ -194,7 +194,7 @@ export default function Settings() {
               </div>
               <button
                 onClick={() => setShowDeleteWorkspace(true)}
-                className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3.5 py-2 rounded-xl transition-colors flex-shrink-0"
+                className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3.5 py-2 rounded-sm transition-colors flex-shrink-0"
               >
                 <TrashIcon width={14} height={14} />
                 Delete

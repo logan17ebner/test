@@ -33,7 +33,7 @@ function fmtNum(n, suffix = '') {
 
 function Card({ label, value, dotKind, dotValue, unitEconomics }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-2">
+    <div className="bg-blue-50 border border-slate-300 rounded-sm p-4 flex flex-col gap-2 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-slate-500 text-[10px] font-semibold uppercase tracking-wide">{label}</span>
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass(dotKind, dotValue, unitEconomics)}`} aria-hidden />
@@ -46,7 +46,7 @@ function Card({ label, value, dotKind, dotValue, unitEconomics }) {
 export default function UnitEconomicsGrid({ unitEconomics }) {
   if (unitEconomics == null || typeof unitEconomics !== 'object') {
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 flex items-center justify-center text-slate-400 text-sm text-center">
+      <div className="bg-blue-50 border border-slate-300 rounded-sm p-8 flex items-center justify-center text-slate-400 text-sm text-center shadow-sm">
         Unit economics will appear once the KPI agent extracts them.
       </div>
     );
@@ -63,7 +63,7 @@ export default function UnitEconomicsGrid({ unitEconomics }) {
 
   if (!hasAny) {
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 flex items-center justify-center text-slate-400 text-sm text-center">
+      <div className="bg-blue-50 border border-slate-300 rounded-sm p-8 flex items-center justify-center text-slate-400 text-sm text-center shadow-sm">
         Unit economics will appear once the KPI agent extracts them.
       </div>
     );
@@ -94,7 +94,7 @@ export default function UnitEconomicsGrid({ unitEconomics }) {
         />
       </div>
       {payback != null && payback !== '' && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-3 rounded-sm border border-slate-300 bg-blue-100/40 px-4 py-2.5">
           <span className="text-slate-500 text-xs font-medium uppercase tracking-wide">Payback</span>
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${dotClass('payback', payback, unitEconomics)}`} aria-hidden />

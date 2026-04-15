@@ -6,10 +6,10 @@ export default function ComparableCompanies({ comparables }) {
   if (!comparables || comparables.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-blue-100/40 rounded-sm flex items-center justify-center">
           <BarChartIcon width={18} height={18} className="text-slate-300" />
         </div>
-        <p className="text-slate-500 text-sm">Comparable company analysis will appear here once the n8n workflow outputs a <code className="mx-1 px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 text-xs">market.comparables</code> array.</p>
+        <p className="text-slate-500 text-sm">Comparable company analysis will appear here once the n8n workflow outputs a <code className="mx-1 px-1.5 py-0.5 bg-blue-100/40 rounded-sm text-slate-600 text-xs">market.comparables</code> array.</p>
       </div>
     );
   }
@@ -19,13 +19,13 @@ export default function ComparableCompanies({ comparables }) {
       {comparables.map((company, i) => (
         <div
           key={i}
-          className="border border-slate-200 rounded-xl overflow-hidden"
+          className="border border-slate-300 rounded-sm overflow-hidden bg-blue-50 shadow-sm"
           style={{ borderLeftWidth: 3, borderLeftColor: ACCENT_COLORS[i % ACCENT_COLORS.length] }}
         >
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+          <div className="px-4 py-3 border-b border-slate-300 flex items-center justify-between gap-2">
             <p className="text-slate-900 font-semibold text-sm truncate">{company.name}</p>
             {company.stage && (
-              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0">{company.stage}</span>
+              <span className="text-xs text-slate-500 bg-blue-100/40 px-2 py-0.5 rounded-full flex-shrink-0">{company.stage}</span>
             )}
           </div>
           {company.metrics && (

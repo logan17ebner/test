@@ -3,7 +3,6 @@ import { DocumentsProvider } from './context/DocumentsContext';
 import AuthGate from './components/AuthGate';
 
 import Landing from './pages/Landing';
-import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import Analysis from './pages/Analysis';
@@ -15,7 +14,6 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/admin" element={<Admin />} />
 
           <Route element={<AuthGate />}>
             <Route path="dashboard" element={<Dashboard />} />

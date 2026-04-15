@@ -30,7 +30,7 @@ export default function AgentConfidenceBars({ confidenceScores }) {
         yAxisWidth={100}
         showGridLines
       />
-      <p className="text-xs text-slate-500 border-t border-slate-100 pt-3">
+      <p className="text-xs text-slate-500 border-t border-slate-300 pt-3">
         Average across agents:{' '}
         <span className="font-mono-data text-slate-800 font-semibold">{avg.toFixed(0)}%</span>
       </p>
